@@ -1,9 +1,9 @@
 close all;
-clearvars -except ProstheticIntensityResponse ProstheticIntensity;
+clearvars -except ProstheticIntensityResponse ProstheticIntensity CPDs CPDResponse;
 RastFig = figure; RawFig = figure; PsthFig = figure;
 [fname,pathname]=uigetfile('*.mat','Choose data file');
 ChannelPosition = [1,9,5,6,14,13,2,10,15,7,12,11,3,4,16,8];
-std_Factor=-4.5;
+std_Factor=-5.5;
 FigPlotNum = 1;
 for c = 1:1 % Change according to the number of recorded channels
 % Select One of the two rows below according to the stimulation system 
@@ -203,4 +203,22 @@ ProstheticIntensityResponse = [ProstheticIntensityResponse;max(Data.PSTH{1}(4:Re
     ylabel('Spiking Rate[Hz]','FontSize',20)
     xlabel('Intensity[mW/mm^2]','FontSize',20)
 
-
+    
+    
+    
+    
+    %% CPD Selectivity over different data files
+    CPDs = []; CPDResponse = [];
+    %% Calculation
+a = [strfind(fname,'0_'),strfind(fname,'CPD')];
+CPD = fname(a(1):a(2)-1);
+CPD(strfind(CPD,'_')) = '.';
+CPDs = [CPDs; str2num(CPD)];
+ResponseWindow = [1.1/binsize_sec:1.1/binsize_sec+4];
+CPDResponse = [CPDResponse; max(max(Data.PSTH{1}(ResponseWindow)))];
+    %% Plotting
+    figure();
+    plot(CPDs,CPDResponse,'-')
+    %xticks(round(CPDs,1))
+    ylabel('Spiking Rate[Hz]','FontSize',20)
+    xlabel('CPD','FontSize',20)
