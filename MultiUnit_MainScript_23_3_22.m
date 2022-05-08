@@ -3,7 +3,7 @@ clearvars -except ProstheticIntensityResponse ProstheticIntensity;
 RastFig = figure; RawFig = figure; PsthFig = figure;
 [fname,pathname]=uigetfile('*.mat','Choose data file');
 ChannelPosition = [1,9,5,6,14,13,2,10,15,7,12,11,3,4,16,8];
-std_Factor=-6;
+std_Factor=-4.5;
 FigPlotNum = 1;
 for c = 1:1 % Change according to the number of recorded channels
 % Select One of the two rows below according to the stimulation system 
@@ -14,11 +14,11 @@ for c = 1:1 % Change according to the number of recorded channels
     if ~channelflag
         [stimulus_times,stimulus_indexes]=find_stim(stim_Data,stim_sampling_rate,sampling_freq,Begin_record); % run only for screen stimulus
 
-        [startIndex,endIndex] = regexp(fname,'_\d*ms');
+        [startIndex,endIndex] = regexp(fname,'_\d*st');
         if startIndex ~= 0
             StimDuration = str2double(fname(startIndex+1:endIndex-2));
         else
-            StimDuration = 250;
+            StimDuration = 0;
         end
        
         stimulus_indexes = stimulus_indexes-round(StimDuration/1000*stim_sampling_rate);
@@ -112,7 +112,7 @@ for c=1:length(ActiveChannels)
     plot(t_spike,Data.AverageSpike{ActiveChannels(c)},'k','linewidth',2)
     xlabel('Time[mSec]','FontSize',20)
     ylabel('Amplitude[\muV]','FontSize',20)
-    ylim([-200 200]);
+    ylim([-100 100]);
     title(['Spike Waveforms Channel ',num2str(ActiveChannels(c))]);
     % PCA + Clustering
     ClustEvalDB = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','DaviesBouldin','KList',[1:5]);
@@ -140,7 +140,7 @@ for c=1:length(ActiveChannels)
     end
     xlabel('Time[mSec]','FontSize',20)
     ylabel('Amplitude[\muV]','FontSize',20)
-    ylim([-200 200]);
+    ylim([-100 100]);
     legend('Cluster 1','Cluster 2','Cluster 3','Cluster 4')
 end
 %% Sorted Plots
