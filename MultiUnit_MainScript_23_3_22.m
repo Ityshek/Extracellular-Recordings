@@ -1,3 +1,4 @@
+%% Load & Plot Basic Data
 close all;
 clearvars -except ProstheticIntensityResponse ProstheticIntensity CPDs CPDResponse;
 RastFig = figure; RawFig = figure; PsthFig = figure;
@@ -20,11 +21,11 @@ for c = 1:1 % Change according to the number of recorded channels
         else
             StimDuration = 0;
         end
-       
         stimulus_indexes = stimulus_indexes-round(StimDuration/1000*stim_sampling_rate);
         t=[0:length(raw_data)-1]/sampling_freq;        
         Data.thresh(c)=std_Factor*nanstd(double(raw_data));
-        %% Plot raw data
+        
+        % Plot raw data%
         stim=nan(length(raw_data),1);
         stim(stimulus_indexes)=90;
         figure(RawFig);
@@ -39,7 +40,8 @@ for c = 1:1 % Change according to the number of recorded channels
         %         legend('Raw Signal','Trigger','Detected Spikes','Threshold')
         ylim([-400 400])
         xlim([0 max(t)])
-        %% Build raster
+        
+        % Build raster%
         outlier = str2num(cell2mat(inputdlg('Set Amplitude threshold to filter out outliers')));
         [Rast,Spike,Av_spike,indx_spike,ind_rast,spike_stim,spike_times]=build_rastRef(stimulus_indexes,stimulus_times,raw_data,sampling_freq,Data.thresh(c),outlier);
         Data.SpikeTimes{c} = spike_times;
@@ -63,7 +65,8 @@ for c = 1:1 % Change according to the number of recorded channels
         % Sponteneous Activity in Hz, calculated from recording prior to 1st trigger.
         NumSponSpikes = length(find(spike_times<stimulus_times(1)));
         Spon = NumSponSpikes/stimulus_times(1);
-        %% Build PSTH
+        
+        % Build PSTH%
         figure(PsthFig);
         subplot(FigPlotNum,FigPlotNum,ChannelPosition(c))
         [Psth,binsize_sec]=Build_psth3(Rast,sampling_freq);
