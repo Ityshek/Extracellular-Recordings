@@ -143,6 +143,38 @@ for c=1:length(ActiveChannels)
     ylabel('Amplitude[\muV]','FontSize',20)
     ylim([-100 100]);
     legend('Cluster 1','Cluster 2','Cluster 3','Cluster 4')
+
+    %  raw data with sorted spikes
+%         stim=nan(length(raw_data),1);
+%         stim(stimulus_indexes)=90;
+        figure();
+        subplot(FigPlotNum,FigPlotNum,ChannelPosition(c))
+%       threshold = Data.thresh(c)*ones(1,length(t));
+        plot(t,raw_data,'b',t,stim,'og',t,threshold,'r')
+
+        % figure settings
+        xlabel('Time[Sec]','FontSize',20)
+        ylabel('Amplitude[\muV]','FontSize',20)
+        title(['Channel ',num2str(c)])
+        %         legend('Raw Signal','Trigger','Detected Spikes','Threshold')
+        ylim([-400 400])
+        xlim([0 max(t)])  
+        hold on
+
+        for i=1:Data.dim{ActiveChannels(c)}  
+            ClusteredIdx{i} = nan(1,length(Aligned_idx));
+            ClusteredVal{i} = nan(1,length(Aligned_idx));
+            for k = 1:length(Aligned_idx)
+                if  Data.ClusterIdx{c}(k) == i
+                ClusteredIdx{i}(k) = Aligned_idx(k);
+                ClusteredVal{i}(k) = raw_data(Aligned_idx(k));
+            end
+        end
+             y{i} = nan(1,length(t));
+             y{i}(rmmissing(ClusteredIdx{i})) = rmmissing(ClusteredVal{i});
+             plot(t,y{i},['*';col(i)]);
+             hold on
+        end
 end
 %% Sorted Plots
 for c = 1:1
@@ -219,8 +251,8 @@ ResponseWindow = [1.1/binsize_sec:1.1/binsize_sec+4];
 CPDResponse = [CPDResponse; max(max(Data.PSTH{1}(ResponseWindow)))];
     %% Plotting
 figure();
-plot(CPDs,CPDResponse,'-')
-xticks(round(CPDs,1))
-ylabel('Spiking Rate[Hz]','FontSize',20)
-xlabel('CPD','FontSize',20)
-ylim([0 250]);
+plot(CPDs,CPDResponse,'-');
+xticks(round(linspace(min(CPDs),max(CPDs),10),2));
+ylabel('Spiking Rate[Hz]','FontSize',20);
+xlabel('CPD','FontSize',20);
+ylim([0 150]);

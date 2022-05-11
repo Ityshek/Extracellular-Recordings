@@ -24,9 +24,9 @@ events_ind=find(circshift(raw_data,[0 1])>thresh&raw_data<thresh); % indecies fo
 %     events_ind = rmmissing(events_ind);
 % end
 for i=1:length(events_ind)
-    if events_ind(i)-1*10^-3*sampling_freq>0&events_ind(i)+1.5*10^-3*sampling_freq<length(raw_data) %&circshift(raw_data(events_ind(i)),[0 -1])>-200
+    if events_ind(i)-3*10^-3*sampling_freq>0&events_ind(i)+3*10^-3*sampling_freq<length(raw_data) %&circshift(raw_data(events_ind(i)),[0 -1])>-200
         if max([raw_data(events_ind(i)-((1*10^-3)*sampling_freq):events_ind(i)+((1.5*10^-3)*sampling_freq))]) < outlier
-            spike{i}=raw_data(events_ind(i)-1*10^-3*sampling_freq:events_ind(i)+1.5*10^-3*sampling_freq); % saves the  i spike's amplitudes
+            spike{i}=raw_data(events_ind(i)-3*10^-3*sampling_freq:events_ind(i)+3*10^-3*sampling_freq); % saves the  i spike's amplitudes
         end
     end
 end
