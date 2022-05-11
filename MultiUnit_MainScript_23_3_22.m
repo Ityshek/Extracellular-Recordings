@@ -30,7 +30,7 @@ for c = 1:1 % Change according to the number of recorded channels
         figure(RawFig);
         subplot(FigPlotNum,FigPlotNum,ChannelPosition(c))
         threshold = Data.thresh(c)*ones(1,length(t));
-        plot(t,raw_data,'b',t,stim,'og',t,threshold,'r')
+        plot(t,raw_data,'b',t,stim,'^g',t,threshold,'r')
 
         % figure settings
         xlabel('Time[Sec]','FontSize',20)
@@ -90,10 +90,11 @@ end
 ActiveChannels = cell2mat(inputdlg('Select Channels for Further Analysis'));
 ActiveChannels = str2num(ActiveChannels);
 FigPlotNum = round(length(ActiveChannels)/2);
-AvgSpkFig = figure; AvgsortedSpkFig = figure; ClusterResultsFig = figure;
+AvgSpkFig = figure;  ClusterResultsFig = figure;
 %TIHFig = figure;
 col=['r','g','b','m','c','y','k'];
 for c=1:length(ActiveChannels)
+    AvgsortedSpkFig{c} = figure;
     % TIH
     %     Data.ISI{ActiveChannels(c)} = diff(Data.SpikeTimes{ActiveChannels(c)});
     %     figure(TIHFig)
@@ -116,10 +117,10 @@ for c=1:length(ActiveChannels)
     ylim([-100 100]);
     title(['Spike Waveforms Channel ',num2str(ActiveChannels(c))]);
     % PCA + Clustering
-    ClustEvalDB = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','DaviesBouldin','KList',[1:5]);
-    ClustEvalSILL = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','Silhouette','KList',[1:5]);
-    Data.dim{ActiveChannels(c)}=round(mean([ClustEvalSILL.OptimalK ClustEvalDB.OptimalK]));
-    %Data.dim{ActiveChannels(c)}= 3;
+    %ClustEvalDB = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','DaviesBouldin','KList',[1:5]);
+    %ClustEvalSILL = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','Silhouette','KList',[1:5]);
+    %Data.dim{ActiveChannels(c)}=round(mean([ClustEvalSILL.OptimalK ClustEvalDB.OptimalK]));
+    Data.dim{ActiveChannels(c)}= 2;
     figure(ClusterResultsFig)
     subplot(FigPlotNum,FigPlotNum,c)
     [Data.ClusterIdx{ActiveChannels(c)},C,score]=PCA_Analysis5(Data.AlignedSpikes{ActiveChannels(c)},Data.dim{ActiveChannels(c)});
@@ -133,16 +134,21 @@ for c=1:length(ActiveChannels)
     for i=1:Data.dim{ActiveChannels(c)}
         t_sort=((0:size(Data.SortedSpikes{1,ActiveChannels(c)}{i},1)-1)/sampling_freq)*10^3;
         Avg_Sorted_Spikes(:,i) = mean(Data.SortedSpikes{ActiveChannels(c)}{i},2);
-        figure(AvgsortedSpkFig);
-        subplot(FigPlotNum,FigPlotNum,c)
-        plot(t_sort,Avg_Sorted_Spikes(:,i),col(i),'linewidth',2)
-        title(['Mean of sorted waveforms - Channel ',num2str(ActiveChannels(c))]);
+        figure(AvgsortedSpkFig{c});
+        subplot(1,Data.dim{ActiveChannels(c)},i)
+        for u = 1:size(Data.SortedSpikes{ActiveChannels(c)}{i},2)
+        plot(t_sort,Data.SortedSpikes{ActiveChannels(c)}{i}(:,u))
         hold on
+        end
+        plot(t_sort,Avg_Sorted_Spikes(:,i),'k','linewidth',2)
+        title(['Sorted waveforms - Cluster ',num2str(i)]);
+        hold on
+        xlabel('Time[mSec]','FontSize',20)
+        ylabel('Amplitude[\muV]','FontSize',20)
+        ylim([-200 100]);
     end
-    xlabel('Time[mSec]','FontSize',20)
-    ylabel('Amplitude[\muV]','FontSize',20)
-    ylim([-100 100]);
-    legend('Cluster 1','Cluster 2','Cluster 3','Cluster 4')
+
+    
 
     %  raw data with sorted spikes
 %         stim=nan(length(raw_data),1);
@@ -150,13 +156,12 @@ for c=1:length(ActiveChannels)
         figure();
         subplot(FigPlotNum,FigPlotNum,ChannelPosition(c))
 %       threshold = Data.thresh(c)*ones(1,length(t));
-        plot(t,raw_data,'b',t,stim,'og',t,threshold,'r')
+        plot(t,raw_data,'b',t,stim,'^g',t,threshold,'r')
 
         % figure settings
         xlabel('Time[Sec]','FontSize',20)
         ylabel('Amplitude[\muV]','FontSize',20)
-        title(['Channel ',num2str(c)])
-        %         legend('Raw Signal','Trigger','Detected Spikes','Threshold')
+        title(['Channel ',num2str(c)])        
         ylim([-400 400])
         xlim([0 max(t)])  
         hold on
@@ -175,6 +180,7 @@ for c=1:length(ActiveChannels)
              plot(t,y{i},['*';col(i)]);
              hold on
         end
+ legend('Raw Signal','Trigger','Threshold','Detected Spikes Cluster 1','Detected Spikes Cluster 2')
 end
 %% Sorted Plots
 for c = 1:1
