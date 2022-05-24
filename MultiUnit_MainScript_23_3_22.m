@@ -1,6 +1,6 @@
 %% Load & Plot Basic Data
 close all;
-clearvars -except ProstheticIntensityResponse ProstheticIntensity CPDs CPDResponse;
+clearvars -except ProstheticIntensityResponse ProstheticIntensity CPDs CPDResponse Spon;
 RastFig = figure; RawFig = figure; PsthFig = figure;
 [fname,pathname]=uigetfile('*.mat','Choose data file');
 ChannelPosition = [1,9,5,6,14,13,2,10,15,7,12,11,3,4,16,8];
@@ -227,7 +227,7 @@ end
 
 end
 %% Prosthetic Intensity Response Curve
-    ProstheticIntensity = []; ProstheticIntensityResponse = [];    
+    ProstheticIntensity = []; ProstheticIntensityResponse = []; Spon = [];   
     %% Calculation
         % Amplitude to Intensity Conversion
 B = [1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7;1.1,2.9,4.6,6.501,7.9,9.1,10.1,11.7,13,14.4,15.7,17.3,18.9]; % 1st row are current in Amp. Second row are intensity in mW.
@@ -239,19 +239,20 @@ ResponseWindow = 0.06/binsize_sec + 2; % Define time window for Prosthetic respo
 ProstheticIntensityResponse = [ProstheticIntensityResponse;max(Data.PSTH{1}(4:ResponseWindow))]; 
     %% Plotting
 figure();
-plot(ProstheticIntensity,ProstheticIntensityResponse,'-')
+spon = ones(length(CPDResponse))*mean(Spon);
+plot(ProstheticIntensity,ProstheticIntensityResponse,'-',ProstheticIntensity,spon,'-')
 xticks(round(ProstheticIntensity,1))
 ylabel('Spiking Rate[Hz]','FontSize',20)
 xlabel('Intensity[mW/mm^2]','FontSize',20)
 
    %% Sponteneous Activity in Hz, calculated from recording prior to 1st trigger.
         NumSponSpikes = length(find(spike_times<stimulus_times(1)));
-        Spon = round(NumSponSpikes/stimulus_times(1),1);
+        Spon = [Spon;round(NumSponSpikes/stimulus_times(1),1)];
     
     
     
 %% CPD Selectivity over different data files
-CPDs = []; CPDResponse = [];
+CPDs = []; CPDResponse = []; Spon = [];
     %% Calculation
 a = [max(strfind(fname,'0_')),strfind(fname,'CPD')];
 CPD = fname(a(1):a(2)-1);
@@ -261,7 +262,8 @@ ResponseWindow = [1.1/binsize_sec:1.1/binsize_sec+4];
 CPDResponse = [CPDResponse; max(max(Data.PSTH{1}(ResponseWindow)))];
     %% Plotting
 figure();
-plot(CPDs,CPDResponse,'-');
+spon = ones(length(CPDResponse))*mean(Spon);
+plot(CPDs,CPDResponse,'-',CPDs,spon,'-');
 xticks(round(linspace(min(CPDs),max(CPDs),10),2));
 ylabel('Spiking Rate[Hz]','FontSize',20);
 xlabel('CPD','FontSize',20);
