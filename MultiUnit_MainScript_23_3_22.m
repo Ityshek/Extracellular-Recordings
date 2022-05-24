@@ -4,12 +4,13 @@ clearvars -except ProstheticIntensityResponse ProstheticIntensity CPDs CPDRespon
 RastFig = figure; RawFig = figure; PsthFig = figure;
 [fname,pathname]=uigetfile('*.mat','Choose data file');
 ChannelPosition = [1,9,5,6,14,13,2,10,15,7,12,11,3,4,16,8];
-std_Factor=-5;
+std_Factor=-4;
 FigPlotNum = 1;
 for c = 1:1 % Change according to the number of recorded channels
-% Select One of the two rows below according to the stimulation system 
+RC = [str2num(cell2mat(inputdlg('Insert the Number of the Recorded Channel')))];
+    % Select One of the two rows below according to the stimulation system 
     
-   [raw_data, sampling_freq,stim_Data,stim_sampling_rate,Begin_record,channelflag] =load_data_MultiUnit(c,fname,pathname); % data loader for Screen stimulation
+   [raw_data, sampling_freq,stim_Data,stim_sampling_rate,Begin_record,channelflag] =load_data_MultiUnit(RC,fname,pathname); % data loader for Screen stimulation
    %[raw_data,sampling_freq,stim_Data,stim_sampling_rate,Begin_record,channelflag,stimulus_times, stimulus_indexes] = SUload_data_Micron(c,fname,pathname); % data loader for Micron stimulation
 
     if ~channelflag
@@ -27,11 +28,11 @@ for c = 1:1 % Change according to the number of recorded channels
         
         % Plot raw data%
         stim=nan(length(raw_data),1);
-        stim(stimulus_indexes)=90;
+        stim(stimulus_indexes(2:end))=90;
         figure(RawFig);
         subplot(FigPlotNum,FigPlotNum,ChannelPosition(c))
         threshold = Data.thresh(c)*ones(1,length(t));
-        plot(t,raw_data,'b',t,stim,'^g',t,threshold,'r')
+        plot(t,raw_data,'b',t,stim,'vg',t,threshold,'r')
 
         % figure settings
         xlabel('Time[Sec]','FontSize',20)
@@ -62,9 +63,7 @@ for c = 1:1 % Change according to the number of recorded channels
         title(['Channel ',num2str(c)])
         xlim([0 length(Rast)])
         
-        % Sponteneous Activity in Hz, calculated from recording prior to 1st trigger.
-        NumSponSpikes = length(find(spike_times<stimulus_times(1)));
-        Spon = NumSponSpikes/stimulus_times(1);
+
         
         % Build PSTH%
         figure(PsthFig);
@@ -79,7 +78,7 @@ for c = 1:1 % Change according to the number of recorded channels
         xlabel('Time[mSec]','FontSize',20)
         ylabel('Spiking Rate[Hz]','FontSize',20)
         title(['Channel ',num2str(c)])
-        ylim([0 200]);
+        ylim([0 250]);
 
     end
 end
@@ -95,7 +94,7 @@ ActiveChannels = str2num(ActiveChannels);
 FigPlotNum = round(length(ActiveChannels)/2);
 AvgSpkFig = figure;  ClusterResultsFig = figure;
 %TIHFig = figure;
-col=['r','g','b','m','c','y','k'];
+col=['r','g','m','c','y','k'];
 for c=1:length(ActiveChannels)
     AvgsortedSpkFig{c} = figure;
     % TIH
@@ -123,7 +122,7 @@ for c=1:length(ActiveChannels)
     %ClustEvalDB = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','DaviesBouldin','KList',[1:5]);
     %ClustEvalSILL = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','Silhouette','KList',[1:5]);
     %Data.dim{ActiveChannels(c)}=round(mean([ClustEvalSILL.OptimalK ClustEvalDB.OptimalK]));
-    Data.dim{ActiveChannels(c)}= 2;
+    Data.dim{ActiveChannels(c)}= 4;
     figure(ClusterResultsFig)
     subplot(FigPlotNum,FigPlotNum,c)
     [Data.ClusterIdx{ActiveChannels(c)},C,score]=PCA_Analysis5(Data.AlignedSpikes{ActiveChannels(c)},Data.dim{ActiveChannels(c)});
@@ -159,7 +158,7 @@ for c=1:length(ActiveChannels)
         figure();
         subplot(FigPlotNum,FigPlotNum,ChannelPosition(c))
 %       threshold = Data.thresh(c)*ones(1,length(t));
-        plot(t,raw_data,'b',t,stim,'^g',t,threshold,'r')
+        plot(t,raw_data,'b',t,stim,'vg',t,threshold,'r')
 
         % figure settings
         xlabel('Time[Sec]','FontSize',20)
@@ -245,7 +244,9 @@ xticks(round(ProstheticIntensity,1))
 ylabel('Spiking Rate[Hz]','FontSize',20)
 xlabel('Intensity[mW/mm^2]','FontSize',20)
 
-    
+   %% Sponteneous Activity in Hz, calculated from recording prior to 1st trigger.
+        NumSponSpikes = length(find(spike_times<stimulus_times(1)));
+        Spon = round(NumSponSpikes/stimulus_times(1),1);
     
     
     

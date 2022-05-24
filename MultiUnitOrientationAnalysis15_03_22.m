@@ -57,7 +57,7 @@ for c=1:length(AC)
     outlier = str2num(str2mat(inputdlg(prompt,dlgtitle,dims,definpt))); 
     % Average Spike Waveform
     AvgsortedSpkFig{c} = figure();
-    [Data.AlignedSpikes{AC(c)},Data.AverageSpike{AC(c)},Aligned_idx]=Align_spikes4(Data.Spike{AC(c)},sampling_freq,std_Factor, Data.IndxSpike{AC(c)},outlier);
+    [Data.AlignedSpikes{AC(c)},Data.AverageSpike{AC(c)},Aligned_idx]=Align_spikes4(Data.Spike{AC(c)},sampling_freq,std_Factor, Data.IndxSpike{AC(c)});
     t_spike=((0:length(Data.AverageSpike{AC(c)})-1)/sampling_freq)*10^3;
     figure(AvgSpkFig);
     subplot(ceil(max(AC)/4),ceil(max(AC)/4),c)
@@ -72,10 +72,10 @@ for c=1:length(AC)
 
     
     % PCA + Clustering
-    ClustEvalDB = evalclusters(Data.AlignedSpikes{AC(c)},'kmeans','DaviesBouldin','KList',[1:5]);
-    ClustEvalSILL = evalclusters(Data.AlignedSpikes{AC(c)},'kmeans','Silhouette','KList',[1:5]);
-    Data.dim{AC(c)}=round(mean([ClustEvalSILL.OptimalK ClustEvalDB.OptimalK]));
-    %Data.dim{RC(c)} = 2;
+    %ClustEvalDB = evalclusters(Data.AlignedSpikes{AC(c)},'kmeans','DaviesBouldin','KList',[1:5]);
+    %ClustEvalSILL = evalclusters(Data.AlignedSpikes{AC(c)},'kmeans','Silhouette','KList',[1:5]);
+    %Data.dim{AC(c)}=round(mean([ClustEvalSILL.OptimalK ClustEvalDB.OptimalK]));
+    Data.dim{RC(c)} =3;
     figure(ClusterResultsFig)
     subplot(ceil(max(AC)/4),ceil(max(AC)/4),c)
     [Data.ClusterIdx{AC(c)},C,score,Data.AlignedSpikes{AC(c)}]=PCA_Analysis6(Data.AlignedSpikes{AC(c)},Data.dim{AC(c)},outlier);
@@ -122,7 +122,7 @@ for c=1:length(AC)
                 PSTHBineSize = 0.05; % binsize for PSTH in Seconds.
                 [PSTH{c}{d}{p}(i,:),binsize_sec]=Build_psth5(Data.SortedRasters{AC(c)}{d}(OrientationStimNums{i}(:,1),:),sampling_freq,PSTHBineSize);
                 %PSTHBinsForResponse = floor(StimTimeForPSTHCalc/binsize_sec);
-                ResponsePerOrientation{c}{d}(p,i) = max(PSTH{c}{d}{p}(i,end-(BlankScreenSec/binsize_sec):end)); % Calculate the average response per orientation over entire stimulus presentation in spikes/sec.
+                ResponsePerOrientation{c}{d}(p,i) = max(PSTH{c}{d}{p}(i,(BlankScreenSec/binsize_sec):end)); % Calculate the max response per orientation over entire stimulus presentation in spikes/sec.
                 count = count+1;
             end
             figure(OrResponsePerCPDFig{c}{d})
