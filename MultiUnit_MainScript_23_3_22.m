@@ -4,14 +4,14 @@ clearvars -except ProstheticIntensityResponse ProstheticIntensity CPDs CPDRespon
 RastFig = figure; RawFig = figure; PsthFig = figure;
 [fname,pathname]=uigetfile('*.mat','Choose data file');
 ChannelPosition = [1,9,5,6,14,13,2,10,15,7,12,11,3,4,16,8];
-std_Factor=-4;
+std_Factor=-4.5;
 FigPlotNum = 1;
 for c = 1:1 % Change according to the number of recorded channels
 RC = [str2num(cell2mat(inputdlg('Insert the Number of the Recorded Channel')))];
     % Select One of the two rows below according to the stimulation system 
     
    [raw_data, sampling_freq,stim_Data,stim_sampling_rate,Begin_record,channelflag] =load_data_MultiUnit(RC,fname,pathname); % data loader for Screen stimulation
-   %[raw_data,sampling_freq,stim_Data,stim_sampling_rate,Begin_record,channelflag,stimulus_times, stimulus_indexes] = SUload_data_Micron(c,fname,pathname); % data loader for Micron stimulation
+   %[raw_data,sampling_freq,stim_Data,stim_sampling_rate,Begin_record,channelflag,stimulus_times, stimulus_indexes] = SUload_data_Micron(RC,fname,pathname); % data loader for Micron stimulation
 
     if ~channelflag
         [stimulus_times,stimulus_indexes]=find_stim(stim_Data,stim_sampling_rate,sampling_freq,Begin_record); % run only for screen stimulus
@@ -20,7 +20,7 @@ RC = [str2num(cell2mat(inputdlg('Insert the Number of the Recorded Channel')))];
         if startIndex ~= 0
             StimDuration = str2double(fname(startIndex+1:endIndex-2));
         else
-            StimDuration = 0;
+            StimDuration = 50;
         end
         stimulus_indexes = stimulus_indexes-round(StimDuration/1000*stim_sampling_rate);
         t=[0:length(raw_data)-1]/sampling_freq;        
@@ -87,24 +87,19 @@ end
         x(indx_spike)=raw_data(indx_spike);
         hold on
         plot(t,x,'*k')
+        
+        % Calculate SNR
+        [SNR] = SNRCalc(Spike,raw_data(1:stimulus_indexes(2)));
 %% Responsive Channels Analysis
 %close all;
 ActiveChannels = cell2mat(inputdlg('Select Channels for Further Analysis'));
 ActiveChannels = str2num(ActiveChannels);
 FigPlotNum = round(length(ActiveChannels)/2);
-AvgSpkFig = figure;  ClusterResultsFig = figure;
-%TIHFig = figure;
+AvgSpkFig = figure;  ClusterResultsFig = figure; 
 col=['r','g','m','c','y','k'];
 for c=1:length(ActiveChannels)
     AvgsortedSpkFig{c} = figure;
-    % TIH
-    %     Data.ISI{ActiveChannels(c)} = diff(Data.SpikeTimes{ActiveChannels(c)});
-    %     figure(TIHFig)
-    %     subplot(2,2,c)
-    %     edges = [0:0.1:50];
-    %     histogram(Data.ISI{ActiveChannels(c)}*10^3,edges);
-    %     xlabel('ISI[mSec]')
-    %     ylabel('Count')
+
     
     % Average Spike
     [Data.AlignedSpikes{ActiveChannels(c)},Data.AverageSpike{ActiveChannels(c)},Aligned_idx]=Align_spikes4(Data.Spike{ActiveChannels(c)},sampling_freq,std_Factor, Data.IndxSpike{ActiveChannels(c)});
@@ -119,10 +114,10 @@ for c=1:length(ActiveChannels)
     ylim([-100 100]);
     title(['Spike Waveforms Channel ',num2str(ActiveChannels(c))]);
     % PCA + Clustering
-    %ClustEvalDB = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','DaviesBouldin','KList',[1:5]);
-    %ClustEvalSILL = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','Silhouette','KList',[1:5]);
-    %Data.dim{ActiveChannels(c)}=round(mean([ClustEvalSILL.OptimalK ClustEvalDB.OptimalK]));
-    Data.dim{ActiveChannels(c)}= 4;
+    ClustEvalDB = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','DaviesBouldin','KList',[1:5]);
+    ClustEvalSILL = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','Silhouette','KList',[1:5]);
+    Data.dim{ActiveChannels(c)}=round(mean([ClustEvalSILL.OptimalK ClustEvalDB.OptimalK]));
+    %Data.dim{ActiveChannels(c)}= 4;
     figure(ClusterResultsFig)
     subplot(FigPlotNum,FigPlotNum,c)
     [Data.ClusterIdx{ActiveChannels(c)},C,score]=PCA_Analysis5(Data.AlignedSpikes{ActiveChannels(c)},Data.dim{ActiveChannels(c)});
@@ -183,6 +178,17 @@ for c=1:length(ActiveChannels)
              hold on
         end
  legend('Raw Signal','Trigger','Threshold','Detected Spikes Cluster 1','Detected Spikes Cluster 2')
+%   TIH
+        TIHFig = figure;
+        for i=1:Data.dim{ActiveChannels(c)}       
+        Data.ISI{ActiveChannels(c)}{i} = (diff(rmmissing(ClusteredIdx{i}))/sampling_freq)*10^3; % Save the ISIs in mSec for every cluster 
+        figure(TIHFig)
+        subplot(2,2,i)
+        edges = [0:0.1:200];
+        histogram(Data.ISI{ActiveChannels(c)}{i},edges);
+        xlabel('ISI[mSec]')
+        ylabel('Count')
+        end
 end
 %% Sorted Plots
 for c = 1:1
@@ -244,6 +250,7 @@ plot(ProstheticIntensity,ProstheticIntensityResponse,'-',ProstheticIntensity,spo
 xticks(round(ProstheticIntensity,1))
 ylabel('Spiking Rate[Hz]','FontSize',20)
 xlabel('Intensity[mW/mm^2]','FontSize',20)
+legend('Intensity Response','Spontaneous Activity');
 
    %% Sponteneous Activity in Hz, calculated from recording prior to 1st trigger.
         NumSponSpikes = length(find(spike_times<stimulus_times(1)));
@@ -258,13 +265,14 @@ a = [max(strfind(fname,'0_')),strfind(fname,'CPD')];
 CPD = fname(a(1):a(2)-1);
 CPD(strfind(CPD,'_')) = '.';
 CPDs = [CPDs; str2num(CPD)];
-ResponseWindow = [1.1/binsize_sec:1.1/binsize_sec+4];
+ResponseWindow = [1.1/binsize_sec:1.1/binsize_sec+5];
 CPDResponse = [CPDResponse; max(max(Data.PSTH{1}(ResponseWindow)))];
     %% Plotting
 figure();
 spon = ones(length(CPDResponse))*mean(Spon);
-plot(CPDs,CPDResponse,'-',CPDs,spon,'-');
+plot(CPDs,CPDResponse,'-',CPDs,spon,'r-');
 xticks(round(linspace(min(CPDs),max(CPDs),10),2));
 ylabel('Spiking Rate[Hz]','FontSize',20);
 xlabel('CPD','FontSize',20);
+legend('CPD Response','Spontaneous Activity')
 ylim([0 150]);

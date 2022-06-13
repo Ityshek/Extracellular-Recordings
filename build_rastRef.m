@@ -12,17 +12,16 @@ count_stim=1;
 
 
 
-events_ind=find(circshift(raw_data,[0 1])>thresh&raw_data<thresh); % indecies for spike times, detected by thresh.
-% while min(diff(events_ind))<0.003*sampling_freq
-%     for i=2:length(events_ind)
-%         if ~isempty(events_ind(i-1))
-%             if events_ind(i) < events_ind(i-1)+0.003*sampling_freq
-%                 events_ind(i) = NaN;
-%             end
-%         end
-%     end
-%     events_ind = rmmissing(events_ind);
-% end
+Events_ind=find(circshift(raw_data,[0 1])>thresh&raw_data<thresh); % indecies for spike times, detected by thresh.
+
+% remove events inside refractory period
+events_ind = [];
+for i=2:length(Events_ind)
+    if Events_ind(i) - Events_ind(i-1) > 88
+        events_ind = [events_ind,Events_ind(i)];
+    end
+end
+
 for i=1:length(events_ind)
     if events_ind(i)-3*10^-3*sampling_freq>0&events_ind(i)+3*10^-3*sampling_freq<length(raw_data) %&circshift(raw_data(events_ind(i)),[0 -1])>-200
         if max([raw_data(events_ind(i)-((1*10^-3)*sampling_freq):events_ind(i)+((1.5*10^-3)*sampling_freq))]) < outlier
@@ -33,7 +32,7 @@ end
 
 
 %% build raster
-%for k=1:2:length(stimulus_indexes) % loop over 1 every 2 triggers.
+%for k=1:50:length(stimulus_indexes) % loop over 1 every 50 triggers (10ms duration at 2Hz).
 for k=1:length(stimulus_indexes)
     counter_events=1;
     for i=1:length(events_ind) %loop over all events(spikes found)
