@@ -10,17 +10,17 @@ for c = 1:1 % Change according to the number of recorded channels
 RC = [str2num(cell2mat(inputdlg('Insert the Number of the Recorded Channel')))];
     % Select One of the two rows below according to the stimulation system 
     
-   [raw_data, sampling_freq,stim_Data,stim_sampling_rate,Begin_record,channelflag] =load_data_MultiUnit(RC,fname,pathname); % data loader for Screen stimulation
-   %[raw_data,sampling_freq,stim_Data,stim_sampling_rate,Begin_record,channelflag,stimulus_times, stimulus_indexes] = SUload_data_Micron(RC,fname,pathname); % data loader for Micron stimulation
+   %[raw_data, sampling_freq,stim_Data,stim_sampling_rate,Begin_record,channelflag] =load_data_MultiUnit(RC,fname,pathname); % data loader for Screen stimulation
+   [raw_data,sampling_freq,stim_Data,stim_sampling_rate,Begin_record,channelflag,stimulus_times, stimulus_indexes] = SUload_data_Micron(RC,fname,pathname); % data loader for Micron stimulation
 
     if ~channelflag
-        [stimulus_times,stimulus_indexes]=find_stim(stim_Data,stim_sampling_rate,sampling_freq,Begin_record); % run only for screen stimulus
+        %[stimulus_times,stimulus_indexes]=find_stim(stim_Data,stim_sampling_rate,sampling_freq,Begin_record); % run only for screen stimulus
 
         [startIndex,endIndex] = regexp(fname,'_\d*st');
         if startIndex ~= 0
             StimDuration = str2double(fname(startIndex+1:endIndex-2));
         else
-            StimDuration = 50;
+            StimDuration = 10;
         end
         stimulus_indexes = stimulus_indexes-round(StimDuration/1000*stim_sampling_rate);
         t=[0:length(raw_data)-1]/sampling_freq;        
@@ -245,7 +245,7 @@ ResponseWindow = 0.06/binsize_sec + 2; % Define time window for Prosthetic respo
 ProstheticIntensityResponse = [ProstheticIntensityResponse;max(Data.PSTH{1}(4:ResponseWindow))]; 
     %% Plotting
 figure();
-spon = ones(length(CPDResponse))*mean(Spon);
+spon = ones(1,length(ProstheticIntensityResponse))*mean(Spon);
 plot(ProstheticIntensity,ProstheticIntensityResponse,'-',ProstheticIntensity,spon,'-')
 xticks(round(ProstheticIntensity,1))
 ylabel('Spiking Rate[Hz]','FontSize',20)
@@ -265,11 +265,12 @@ a = [max(strfind(fname,'0_')),strfind(fname,'CPD')];
 CPD = fname(a(1):a(2)-1);
 CPD(strfind(CPD,'_')) = '.';
 CPDs = [CPDs; str2num(CPD)];
-ResponseWindow = [1.1/binsize_sec:1.1/binsize_sec+5];
+%ResponseWindow = [1.1/binsize_sec:1.1/binsize_sec+5];
+ResponseWindow = [0.05/binsize_sec:0.05/binsize_sec+15]; 
 CPDResponse = [CPDResponse; max(max(Data.PSTH{1}(ResponseWindow)))];
     %% Plotting
 figure();
-spon = ones(length(CPDResponse))*mean(Spon);
+spon = ones(1,length(CPDResponse))*mean(Spon);
 plot(CPDs,CPDResponse,'-',CPDs,spon,'r-');
 xticks(round(linspace(min(CPDs),max(CPDs),10),2));
 ylabel('Spiking Rate[Hz]','FontSize',20);

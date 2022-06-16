@@ -2,7 +2,7 @@ close all;
 clear all;
 std_Factor = -4.5;
 NumOrientations = 12;
-NumReps = 15;
+NumReps = 5;
 StimsPerCPD = NumOrientations*NumReps;
 col=['r','g','b','m','c','y','k'];
 Orientations = [0:30:330];
@@ -29,7 +29,7 @@ for c = 1:max(RC)
     t=[0:length(raw_data{c})-1]/sampling_freq;
     stim=nan(length(raw_data{c}),1);
     stim(stimulus_indexes{c})=200;
-    subplot(ceil(max(RC)/4),ceil(max(RC)/4),c)
+    subplot(ceil(max(RC)/2),ceil(max(RC)/2),c)
     x = nan(1,length(t));
     x(Data.IndxSpike{c})=raw_data{c}(Data.IndxSpike{c});
     threshold = Data.thresh(c)*ones(1,length(t));
@@ -47,7 +47,7 @@ for c = 1:max(RC)
 end
 %% Spike Sorting
 AvgSpkFig = figure(); ClusterResultsFig = figure();
-BlankScreenSec = 1;
+BlankScreenSec = 2;
 prompt = {'Select Channels for Further Analysis:'};
 AC = str2num(str2mat(inputdlg(prompt)));
 for c=1:length(AC)
@@ -72,10 +72,10 @@ for c=1:length(AC)
 
     
     % PCA + Clustering
-    %ClustEvalDB = evalclusters(Data.AlignedSpikes{AC(c)},'kmeans','DaviesBouldin','KList',[1:5]);
-    %ClustEvalSILL = evalclusters(Data.AlignedSpikes{AC(c)},'kmeans','Silhouette','KList',[1:5]);
-    %Data.dim{AC(c)}=round(mean([ClustEvalSILL.OptimalK ClustEvalDB.OptimalK]));
-    Data.dim{RC(c)} =3;
+    ClustEvalDB = evalclusters(Data.AlignedSpikes{AC(c)},'kmeans','DaviesBouldin','KList',[1:5]);
+    ClustEvalSILL = evalclusters(Data.AlignedSpikes{AC(c)},'kmeans','Silhouette','KList',[1:5]);
+    Data.dim{AC(c)}=round(mean([ClustEvalSILL.OptimalK ClustEvalDB.OptimalK]));
+    %Data.dim{RC(c)} =3;
     figure(ClusterResultsFig)
     subplot(ceil(max(AC)/4),ceil(max(AC)/4),c)
     [Data.ClusterIdx{AC(c)},C,score,Data.AlignedSpikes{AC(c)}]=PCA_Analysis6(Data.AlignedSpikes{AC(c)},Data.dim{AC(c)},outlier);

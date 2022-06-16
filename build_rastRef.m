@@ -17,7 +17,7 @@ Events_ind=find(circshift(raw_data,[0 1])>thresh&raw_data<thresh); % indecies fo
 % remove events inside refractory period
 events_ind = [];
 for i=2:length(Events_ind)
-    if Events_ind(i) - Events_ind(i-1) > 88
+    if Events_ind(i) - Events_ind(i-1) > 88 & (max([raw_data(Events_ind(i)-((1.5*10^-3)*sampling_freq):Events_ind(i)+((1.5*10^-3)*sampling_freq))]) < outlier)
         events_ind = [events_ind,Events_ind(i)];
     end
 end
