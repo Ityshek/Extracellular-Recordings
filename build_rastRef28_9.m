@@ -1,4 +1,4 @@
-function [Rast,spike,Av_spike,events_ind,ind_rast,spike_stim,spike_Times]=build_rastRef28_9(stimulus_indexes,raw_data,sampling_freq,thresh,IdxISI)
+function [Rast,spike,Av_spike,events_ind,ind_rast,spike_stim,spike_Times]=build_rastRef28_9(stimulus_indexes,raw_data,sampling_freq,thresh,IdxISI,outlier)
 
 
 Stim_times=stimulus_indexes/sampling_freq;
@@ -8,17 +8,21 @@ Rast=sparse(round(length(stimulus_indexes)/ceil(Stim_freq)),int64(ISI*sampling_f
 count_stim=1;
 spike = []; Av_spike = []; spike_stim = []; spike_Times = [];
 
-events_ind=find(circshift(raw_data,[0 -1])>thresh&raw_data<thresh); % indecies for spike times, detected by thresh.
-% while min(diff(events_ind))<0.002*sampling_freq
-%     for i=2:length(events_ind)
-%         if ~isempty(events_ind(i-1))
-%             if events_ind(i) < events_ind(i-1)+0.002*sampling_freq
-%                 events_ind(i) = NaN;
-%             end
-%         end
-%     end
-% events_ind = rmmissing(events_ind);    
-% end
+Events_ind=find(circshift(raw_data,[0 1])>thresh&raw_data<thresh); % indecies for spike times, detected by thresh.
+
+% remove events inside refractory period
+events_ind = [];
+for i=2:length(Events_ind)
+    if Events_ind(i) - Events_ind(i-1) > 88 & (max([raw_data(Events_ind(i)-((1.5*10^-3)*sampling_freq):Events_ind(i)+((1.5*10^-3)*sampling_freq))]) < outlier)
+        events_ind = [events_ind,Events_ind(i)];
+    end
+end
+
+
+
+
+
+
 for i=1:length(events_ind)
     if events_ind(i)-3*10^-3*sampling_freq>0&events_ind(i)+3*10^-3*sampling_freq<length(raw_data)%&circshift(raw_data(events_ind(i)),[0 -1])>-200
         spike{i}=raw_data(events_ind(i)-3*10^-3*sampling_freq:events_ind(i)+3*10^-3*sampling_freq); % saves the  i spike's amplitudes

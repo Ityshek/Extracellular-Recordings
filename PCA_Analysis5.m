@@ -28,7 +28,7 @@ X = bsxfun(@minus,X,mean(X,1));
 
 %%%% clustring based on the PCA analysis
 if size(score,2) > 2
-Z=score(:,1:5);
+Z=score(:,1:3);
 [idx,C] = kmeans(Z,dim,'Distance','sqeuclidean',...
     'Replicates',1000);
 
