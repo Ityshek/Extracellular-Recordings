@@ -93,7 +93,7 @@ end
         plot(t,x,'*k')
         
         % Calculate SNR
-        [SNR] = SNRCalc(Spike,raw_data(1:stimulus_indexes(2)),Data.thresh(c));
+        [Data.SNR] = SNRCalc(Spike,raw_data(1:stimulus_indexes(2)),Data.thresh(c));
 %% Responsive Channels Analysis
 %close all; 
 ActiveChannels = cell2mat(inputdlg('Select Channels for Further Analysis'));
@@ -251,15 +251,20 @@ Data.ProstheticIntensity = [Data.ProstheticIntensity;B(find(B == str2num(Amp))+1
 
 for i=1:length(Data.Clusters)
 ResponseWindow = 0.08/binsize_sec + 2; % Define time window for Prosthetic response. add 2 bins for -10 and 0 bins in PSTH.
-Data.ProstheticIntensityResponse{i} = [Data.ProstheticIntensityResponse{i};max(Data.Psth_sort{Data.Clusters(i)}(4:ResponseWindow))];
+Data.ProstheticIntensityResponse{i} = [Data.ProstheticIntensityResponse{i};round(max(Data.Psth_sort{Data.Clusters(i)}(4:ResponseWindow)),2)];
 end
 %% Prosthetic Response Latency    
 for i=1:length(Data.Clusters)
 [T,V] = max(Data.Psth_sort{Data.Clusters(i)}(4:ResponseWindow));
 Data.ProstheticLatency{i} = [Data.ProstheticLatency{i};(V+1)*binsize_sec*10^3]; % Calculate latency of response in mSec.
 end
-
-% %% Plotting
+    %% Sponteneous Activity in Hz, calculated from recording prior to 1st trigger.
+    LastSponSpike = max(find(spike_times<stimulus_times(1)));    
+    for i=1:length(Data.Clusters)
+    NumSponSpikes = length(find(Data.ClusterIdx{1}(1:LastSponSpike) == Data.Clusters(i)));
+    Data.Spon{i} = [Data.Spon{i};round(NumSponSpikes/stimulus_times(1),1)];
+    end 
+ %% Plotting
 % figure();
 % spon = ones(1,length(ProstheticIntensityResponse))*mean(Spon);
 % plot(ProstheticIntensity,ProstheticIntensityResponse,'-',ProstheticIntensity,spon,'-')
@@ -268,11 +273,6 @@ end
 % xlabel('Intensity[mW/mm^2]','FontSize',20)
 % legend('Intensity Response','Spontaneous Activity');
 % 
-%    %% Sponteneous Activity in Hz, calculated from recording prior to 1st trigger.
-%    for i=1:length(Data.Clusters)
-%    NumSponSpikes = length(find(spike_times<stimulus_times(1)));
-%    Data.Spon = [Spon;round(NumSponSpikes/stimulus_times(1),1)];
-%    end 
 %     
 %     
 % %% CPD Selectivity over different data files
@@ -294,16 +294,21 @@ end
 % xlabel('CPD','FontSize',20);
 % legend('CPD Response','Spontaneous Activity')
 % ylim([0 150]);
-%% Write Results into Table
-sheet = {'Intensity','Response Unit 1','Latency Unit 1','Baseline Activity Unit 1','Response Unit 2','Latency Unit 2','Baseline Activity Unit 2'...
-    ;Data.ProstheticIntensity(1),Data.ProstheticIntensityResponse{1},Data.ProstheticLatency{1},Data.Spon{1}...
-    ,Data.ProstheticIntensityResponse{2},Data.ProstheticLatency{1},Data.Spon{2}};
+%% Write Results into Table & Save Data in a file
+sheet = table(Data.ProstheticIntensity,Data.ProstheticIntensityResponse{1},Data.ProstheticLatency{1},Data.Spon{1}...
+,Data.ProstheticIntensityResponse{2},Data.ProstheticLatency{1},Data.Spon{2},...
+'VariableNames',{'Intensity[mW/mm^2]','Response[Spikes/Sec] Unit 1','Latency Unit[ms] 1','Baseline Activity[Spikes/Sec] Unit 1'...
+,'Response[Spikes/Sec] Unit 2','Latency Unit[ms] 2','Baseline Activity[Spikes/Sec] Unit 2'});
 Path = 'D:\Yossi Mandel Lab\Thesis\Result Tables\';
 Date = pathname(38:47);
 prompt = {'Stimulus Type:','Stim Duration:','Stim Frequency:'};
-definput = {'FullFlash','10ms','2Hz'};
+definput = {'ProstheticFullFlash','10ms','2Hz'};
 dlgtitle = 'Input';
 dims = [1 35];
 AA = inputdlg(prompt,dlgtitle,dims,definput);
 TableName = [Path,AA{1},AA{2},AA{3},Date,'.xlsx'];
-writecell(sheet,TableName)
+writetable(sheet,TableName,'AutoFitWidth',1);
+%                                                           %
+Path2 ='D:\Yossi Mandel Lab\Thesis\Data Files\';
+filename = [Path2,AA{1},AA{2},AA{3},Date,'.mat'];
+save(filename,'Data');
