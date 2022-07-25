@@ -81,4 +81,4 @@ end
 end
 file=[fname(1:end),'_cluster'];
 %  file=[fname(1:end-4),'_pca'];
-  hgsave(clust_fig,[path file(1:end),'.fig' ],'-v7.3');
+% hgsave(clust_fig,[path file(1:end),'.fig' ],'-v7.3');

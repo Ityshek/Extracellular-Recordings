@@ -5,7 +5,7 @@ Stim_freq=round((1/mode(diff(Stim_times))),2);
 %Stim_freq = 1; % for 1Hz 10 frame trigger
 ISI=round(median(diff(Stim_times(2:end))),2);
 %ISI=1; % for 1Hz 10 frame trigger
-Rast=sparse(round(length(stimulus_indexes)/ceil(Stim_freq)),round(ISI*sampling_freq+10*10^-3*sampling_freq)); % for 1Hz trigger
+Rast=sparse(round(length(stimulus_indexes)/ceil(Stim_freq)),round(ISI*sampling_freq)); % 
 %Rast=sparse(round(length(stimulus_indexes)/ceil(Stim_freq)),round(mean(diff(Stim_times)),2)*sampling_freq+10*10^-3*sampling_freq); % for 1Hz 10 frame trigger
 
 count_stim=1;
@@ -17,9 +17,11 @@ Events_ind=find(circshift(raw_data,[0 1])>thresh&raw_data<thresh); % indecies fo
 % remove events inside refractory period
 events_ind = [];
 for i=2:length(Events_ind)
+    if Events_ind(i)+(1.5*10^-3)*sampling_freq<=length(raw_data) & Events_ind(i)-(1.5*10^-3)*sampling_freq>0 
     if Events_ind(i) - Events_ind(i-1) > 88 & (max([raw_data(Events_ind(i)-((1.5*10^-3)*sampling_freq):Events_ind(i)+((1.5*10^-3)*sampling_freq))]) < outlier)
         events_ind = [events_ind,Events_ind(i)];
     end
+end
 end
 
 for i=1:length(events_ind)

@@ -3,7 +3,7 @@ function [Rast_sort]=build_rast_sort2(idx,stimulus_indexes,sampling_freq,ind_ras
 % [width1,width2,width3,idx,Spikes1,Spikes2,Spikes3]=cluster_data(Amplitudes, Width,Spikes);
 ISI=round(mean(diff(Stim_times(2:end))),2);
 for i=1:dim
-    Rast_sort{i}=sparse(length(ind_rast_re2),ISI*sampling_freq+10*10^-3*sampling_freq);
+    Rast_sort{i}=sparse(length(ind_rast_re2),ISI*sampling_freq);
 end
 
 for i=1:length(ind_rast_re2)    

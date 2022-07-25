@@ -1,6 +1,6 @@
+
 [filename, pathname]=uigetfile();
 openfig([pathname filename ]);
-
 h=get(gca,'children');
 Intensity=get(h,'xdata');
 rate=get(h,'ydata');

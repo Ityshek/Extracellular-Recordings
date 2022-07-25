@@ -13,9 +13,9 @@ for c=ActiveChannels(count):ActiveChannels(end)
         else
             CPDs(i) = str2double(fname{i}(startIndex+1:endIndex-3))*0.001;
         end
-            if isempty(CPDs)
+            if isnan(CPDs)
                 [startIndex,endIndex] = regexp(fname{i},'_\d+FrameDur');
-                CPDs = str2double(fname{i}(startIndex+1:endIndex-3));
+                CPDs = str2double(fname{i}(startIndex+1:endIndex-8));
             end
             data{i}=(load([Dir '\' SignalFiles(i).name]));
             if c<=9

@@ -26,39 +26,42 @@ end
 RawDataFig = figure();
 IdxISI = StimsPerCPD; % Select the last index of the stimulus times to be included in ISI calculation(because of concatination reasons).
 count = 1;
-for c = min(RC):max(RC)
-    Data.thresh(c)=std_Factor*nanstd(double(raw_data{c}));
+for c = 1:length(RC)
+    Data.thresh(RC(c))=std_Factor*nanstd(double(raw_data{RC(c)}));
     prompt = {'Insert Upper Thershold Value for spike outliers:'}; 
     definpt = {'200'}; dlgtitle = 'Input'; dims = [1 35];
     outlier = str2num(str2mat(inputdlg(prompt,dlgtitle,dims,definpt))); 
     % Draw Raw Data Plots
     figure(RawDataFig)
-    t=[0:length(raw_data{c})-1]/sampling_freq;
-    stim=nan(length(raw_data{c}),1);
-    stim(stimulus_indexes{c})=200;
+    t=[0:length(raw_data{RC(c)})-1]/sampling_freq;
+    stim=nan(length(raw_data{RC(c)}),1);
+    stim(stimulus_indexes{RC(c)})=200;
     subplot(ceil(length(RC)/2),ceil(length(RC)/2),count)
-    threshold = Data.thresh(c)*ones(1,length(t));
-    plot(t,raw_data{c},'b',t,threshold,'r')
+    threshold = Data.thresh(RC(c))*ones(1,length(t));
+    plot(t,raw_data{RC(c)},'b',t,threshold,'r')
     hold on
      % figure settings
     xlabel('Seconds')
     ylabel('Amplitude[\muV]')
-    title(['Channel ',num2str(c)])
+    title(['Channel ',num2str(RC(c))])
     ylim([-450 450])
     xlim([0 max(t)])
-    [Rast,Data.Spike{c},Av_spike,Data.IndxSpike{c},ind_rast,spike_stim,spike_times]=build_rastRef28_9(stimulus_indexes{c},raw_data{c},sampling_freq,Data.thresh(c),IdxISI,outlier);    
+    [Rast,Data.Spike{RC(c)},Av_spike,Data.IndxSpike{RC(c)},ind_rast,spike_stim,spike_times]=build_rastRef28_9(stimulus_indexes{RC(c)},raw_data{RC(c)},sampling_freq,Data.thresh(RC(c)),IdxISI,outlier);    
     x = nan(1,length(t));
-    x(Data.IndxSpike{c})=raw_data{c}(Data.IndxSpike{c});
+    x(Data.IndxSpike{RC(c)})=raw_data{RC(c)}(Data.IndxSpike{RC(c)});
     plot(t,x,'*k','MarkerSize',1) % Plot the event times in black
     hold on
     plot(t,stim,'xg','MarkerSize',3) % Plot the trigger times in green
-   
+   count = count + 1;
 end
 %% Spike Sorting
 AvgSpkFig = figure(); ClusterResultsFig = figure();
 BlankScreenSec = 1;
 prompt = {'Select Channels for Further Analysis:'};
 AC = str2num(str2mat(inputdlg(prompt)));
+prompt = {'Select Row and Column counts for plots:'};
+RowsColumns = str2num(str2mat(inputdlg(prompt)));
+Count = 1;
 for c=1:length(AC)
     CountUnit = 1;
     % Average Spike Waveform
@@ -66,7 +69,7 @@ for c=1:length(AC)
     [Data.AlignedSpikes{AC(c)},Data.AverageSpike{AC(c)},Aligned_idx]=Align_spikes4(Data.Spike{AC(c)},sampling_freq,std_Factor, Data.IndxSpike{AC(c)});
     t_spike=((0:length(Data.AverageSpike{AC(c)})-1)/sampling_freq)*10^3;
     figure(AvgSpkFig);
-    subplot(ceil(length(AC)/4),ceil(length(AC)/4),c)
+    subplot(RowsColumns(1),RowsColumns(2),Count)
     plot(t_spike,Data.AlignedSpikes{AC(c)})
     hold on
     plot(t_spike,Data.AverageSpike{AC(c)},'k','linewidth',2)
@@ -83,7 +86,7 @@ for c=1:length(AC)
     Data.dim{AC(c)}=round(mean([ClustEvalSILL.OptimalK ClustEvalDB.OptimalK]));
     Data.dim{RC(c)} =1;
     figure(ClusterResultsFig)
-    subplot(ceil(length(AC)/4),ceil(length(AC)/4),c)
+    subplot(RowsColumns(1),RowsColumns(2),Count)
     %[Data.ClusterIdx{AC(c)},C,score,Data.AlignedSpikes{AC(c)}]=PCA_Analysis6(Data.AlignedSpikes{AC(c)},Data.dim{AC(c)},outlier);
     [Data.ClusterIdx{AC(c)},C,score]=PCA_Analysis5(Data.AlignedSpikes{AC(c)},Data.dim{AC(c)});
 
@@ -145,6 +148,7 @@ for c=1:length(AC)
             ylabel('Spikes/Sec');
         end
     end
+Count = Count+1;
 end
 %% OSI calculation
 for c = 1:length(AC)
