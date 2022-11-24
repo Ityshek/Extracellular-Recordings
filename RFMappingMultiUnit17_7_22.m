@@ -10,6 +10,7 @@ AC = [str2num(cell2mat(inputdlg('Insert the Numbers of the Recorded Channels')))
 %clean_chan=clean_artifact(chan_filt,fs);
 [Spike_ind,waveforms,thresh]=find_spikesANDwaves(AC,raw_data,fs,std_factor,Stim_indx);
 [aligned_Spikes,Average_Spike,Aligned_idx]=Align_spikesRF(AC,waveforms,fs,std_factor,Spike_ind);
+FrameDuration = 50;
 
 % Raw Data
 figure();
@@ -18,7 +19,7 @@ for c = 1:length(AC)
     threshold = thresh(AC(c))*ones(1,length(t));
     x = nan(1,length(t));
     x(Spike_ind{AC(c)})=raw_data{AC(c)}(Spike_ind{AC(c)});
-    subplot(length(AC)/4,length(AC)/4,c)
+    subplot(2,length(AC)/2,c)
     plot(t,raw_data{AC(c)},'b',t,threshold,'r',t,x,'*k')
     % figure settings
     xlabel('Time[Sec]','FontSize',15)
@@ -228,7 +229,7 @@ indx_elec=[];
 % count=1;
 % range = max(max(max(cell2mat(Frame))));
 for i=1:length(AC)
-    if ~isempty(Aligned_Spikes{AC(i)})
+    %if ~isempty(Aligned_Spikes{AC(i)})
         figure('Name',['Elec:',num2str(AC(i))]);
         count = 1;
         for k=1:dim{AC(i)}
@@ -238,15 +239,17 @@ for i=1:length(AC)
                 subplot(3,10,count)
                 temp=conv2(Frame{indx_elec(end),k}(50:end,90:end,m)/255,f,'same');
                 temp1=Frame{indx_elec(end),k}(50:end,90:end,m);
-
+                
+                tempScale = temp/(max_val(indx_elec,k));
                 % imagesc(temp/max(max(temp))-mean(mean(temp/max(max(temp))))
-                imagesc(temp,[0 (max_val(indx_elec,k)+0.001)/255]) % Added a minimal value to avoid [0 0] range in empty clusters
+                %imagesc(temp,[0 (max_val(indx_elec,k)+0.001)/255]) % Added a minimal value to avoid [0 0] range in empty clusters
+                imagesc(tempScale,[0 max(max(tempScale))])
                 colormap(parula(1000))
                 title([' Cluster:',num2str(k),' Frame:',num2str(m)])
                 count=count+ 1;
             end
         end
-    end
+    %end
 end
 
 

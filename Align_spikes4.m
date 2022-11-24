@@ -9,8 +9,8 @@ for k=1:length(spike_stim)
             [max_val(k),max_index(k)]=min(spike_stim{1,k});
         end
         spike_indexes(k)=max_index(k);
-        if spike_indexes(k)+1.5*10^-3*fs<=length(spike_stim{1,k})&&spike_indexes(k)-1*10^-3*fs>0   
-            Aligned_Spikes{k}=spike_stim{1,k}(spike_indexes(k)-1*10^-3*fs:spike_indexes(k)+1.5*10^-3*fs);
+        if spike_indexes(k)+2*10^-3*fs<=length(spike_stim{1,k})&&spike_indexes(k)-1.5*10^-3*fs>0   
+            Aligned_Spikes{k}=spike_stim{1,k}(spike_indexes(k)-1.5*10^-3*fs:spike_indexes(k)+2*10^-3*fs);
             Aligned_idx(k) = indx_spike(k);
         end
     end

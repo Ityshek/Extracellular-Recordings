@@ -1,7 +1,7 @@
-function [Psth,binsize_sec]=Build_psth3(Rast,fs)
+function [Psth,binsize_sec,smoothed_y]=Build_psth3(Rast,fs)
  count1=1;
  
-    binsize=10*10^-3*fs; 
+    binsize=5*10^-3*fs; 
     Psth=zeros(round(size(Rast,2)/binsize),1);
     binsize_sec=binsize/fs;
     for k=1:binsize:size(Rast,2)
@@ -11,4 +11,6 @@ function [Psth,binsize_sec]=Build_psth3(Rast,fs)
             count1=count1+1;
         end
     end
-
+    winsize = 4; % window size. 
+    win = ones(winsize,1);
+    smoothed_y = conv(Psth,win,'same')/winsize;
