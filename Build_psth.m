@@ -1,4 +1,4 @@
-function [Psth,smoothed_y,PSTHbinsize]=Build_psth(Rast,fs)
+function [Psth,smoothed_y,PSTHbinsize,SpikeCount]=Build_psth(Rast,fs)
  count1=1;
  
     binsize=5*10^-3*fs; 
@@ -11,6 +11,12 @@ function [Psth,smoothed_y,PSTHbinsize]=Build_psth(Rast,fs)
             count1=count1+1;
         end
     end
+    
+    % Calculate number of spikes per 150ms between 10-160ms post stimulus
+    temp2 = full(Rast(:,2*fs*0.01:17*fs*0.01));
+    SpikeCount = sum(sum(temp2))/size(temp2,1);
+    
+    
     winsize = 4; % window size. 
     win = ones(winsize,1);
     smoothed_y = conv(Psth,win,'same')/winsize;

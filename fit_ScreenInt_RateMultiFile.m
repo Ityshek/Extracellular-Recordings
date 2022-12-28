@@ -26,27 +26,38 @@ for i=1:length(SignalFiles)
     end
 end
 close all
+%% Convert the Intensity Values to Log Scale
+for i=1:length(Intensity)
+LogIntensity{i} = log10(Intensity{i});
+end
 %%
 for i=1:length(SignalFiles)
 fig{i} = figure();
 if answer == '1'
-plot(Intensity{i},Rate{i},'*')
+%plot(Intensity{i},Rate{i},'*')
+plot(LogIntensity{i},Rate{i},'*')
+xlabel('Intensity Log [cd/m^2]','FontSize',15)
+ylabel('Scaled Firing Rate','FontSize',15)
 else
-plot(Intensity{i},Rate{i},'*',Intensity{i},ones(1,length(Intensity{i}))*Spon(i),'--')
-end
+%plot(Intensity{i},Rate{i},'*',Intensity{i},ones(1,length(Intensity{i}))*Spon(i),'--')
+plot(LogIntensity{i},Rate{i},'*',LogIntensity{i},ones(1,length(LogIntensity{i}))*Spon(i),'--')
 xlabel('Intensity [cd/m^2]','FontSize',15)
 ylabel('Firing Rate [Spikes/s]','FontSize',15)
 end
+
+end
+
 %% fit the data to a sigmoid  {\displaystyle f(x)={\frac {1}{1+e^{-x}}}}
 
 for i=1:length(fig)
     figure(fig{i});
     % fit the data to a sigmoid{\displaystyle f(x)={\frac {1}{1+e^{-x}}}}
 
-    fun=@(x)sum((Rate{i}-(x(1)./(1+x(2)*exp(-x(3)*Intensity{i})))).^2);
+%     fun=@(x)sum((Rate{i}-(x(1)./(1+x(2)*exp(-x(3)*Intensity{i})))).^2); % Compute for Original Intensity Vals
+    fun=@(x)sum((Rate{i}-(x(1)./(1+x(2)*exp(-x(3)*LogIntensity{i})))).^2); % Compute for log Intensity Vals
     [x Eval(i)]=fminsearch(fun, [100 1 1]);
     %int_fit{i}=linspace(Intensity{i}(1),42.7,100); % Fit with minimal value presented
-    int_fit{i}=linspace(0,42.7,100); % Fit with 0 value sa minimum
+    int_fit{i}=linspace(0,max(LogIntensity{i}),100); % Fit with 0 value sa minimum
     rate_fit{i} =(x(1)./(1+x(2)*exp(-x(3)*int_fit{i})));
     rate_fit_norm{i} = (rate_fit{i});
     if answer =='0'
@@ -54,7 +65,6 @@ for i=1:length(fig)
     end
     hold on
     plot(int_fit{i},rate_fit{i})
-
 end
 %% Find Stimulation Threshold
 Thresh = StimThresh(SponNorm);
@@ -72,8 +82,8 @@ ScaledAvg = mean(ScaledRate);
 figure();
 errorbar(Int,ScaledAvg,ScaledStd)
 hold on
-ScaledSpon = ones(1,length(ScaledAvg))*Thresh;
-plot(Int,ScaledSpon,'r--')
+%ScaledSpon = ones(1,length(ScaledAvg))*Thresh;
+%plot(Int,ScaledSpon,'r--')
 ylim([0 1.1]);
-xlabel('Intensity [cd/m^2]','FontSize',20)
-ylabel('Firing Rate[Spikes/s]','FontSize',20)
+xlabel('Intensity Log [cd/m^2]','FontSize',20)
+ylabel('Scaled Firing Rate','FontSize',20)

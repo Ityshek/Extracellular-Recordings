@@ -17,9 +17,10 @@ else
 end
 if StimType == '2'
     NumFrames = 2;
+    
     StimChannel = data.CAI_002;
     stim_sampling_rate=data.CAI_002_KHz*1000;
-    sampling_freq=data.CSPK_002_KHz*1000;
+    sampling_freq=data.CSPK_001_KHz*1000;
     for i=1:length(StimChannel)
         if StimChannel(i) <10 && StimChannel(i) > -10
             StimChannel(i) = NaN;
@@ -28,7 +29,6 @@ if StimType == '2'
             StimChannel(i) = StimChannel(i)-max(StimChannel);
         end
     end
-    stim_Data=StimChannel;
     stim_thresh=-100;
     [startIndex,endIndex] = regexp(fname,'_\d*Hz');
     StimFreq = str2num(fname(startIndex+1:endIndex-2));
@@ -64,6 +64,6 @@ else
         stim=zeros(length(t_stim),1);
         stim(round(stimulus_times*stim_sampling_rate))=  stim_thresh;
     end
+    Begin_record=data.CSPK_001_TimeBegin;
 end
-Begin_record=data.CSPK_001_TimeBegin;
 end

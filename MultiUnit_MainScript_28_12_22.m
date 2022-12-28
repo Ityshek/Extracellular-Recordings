@@ -4,7 +4,7 @@ clearvars -except Data;
 RastFig = figure; RawFig = figure; PsthFig = figure;
 [fname,pathname]=uigetfile('*.mat','Choose data file');
 ChannelPosition = [1,9,5,6,14,13,2,10,15,7,12,11,3,4,16,8];
-std_Factor=-4.8;
+std_Factor=-4.5;
 prompt = {'Select Projection System (Screen = 1, Micron =2)', 'Number of Recorded Channels:','Number of the First Recoeded Channel:', 'N rows:','N Column:'};
 dlgtitle = 'Input';
 dims = [1 35];
@@ -89,7 +89,7 @@ for c = 1:FigPlotNum
         % Build PSTH%
         figure(PsthFig);
         subplot(nRows,nColumn,c)
-        [Psth,binsize_sec,smoothed_Psth]=Build_psth3(Rast,sampling_freq);
+        [Psth,binsize_sec,smoothed_Psth,SpikeCount]=Build_psth3(Rast,sampling_freq);
         Data.PSTH{c} = Psth;
         t_pst=1000*linspace(-10*10^-3,size(Psth,1)*binsize_sec,length(Psth));
         b = bar(t_pst,Psth);
@@ -136,15 +136,15 @@ for c=1:length(ActiveChannels)
     plot(t_spike,Data.AlignedSpikes{ActiveChannels(c)})
     hold on
     plot(t_spike,Data.AverageSpike{ActiveChannels(c)},'k','linewidth',2)
-    xlabel('Time[mSec]','FontSize',20)
-    ylabel('Amplitude[\muV]','FontSize',20)
+    xlabel('Time [mSec]','FontSize',20)
+    ylabel('Amplitude [\muV]','FontSize',20)
     ylim([-150 150]);
     title(['Spike Waveforms Channel ',num2str(ActiveChannels(c))]);
     % PCA + Clustering
     ClustEvalCH = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','CalinskiHarabasz','KList',[1:5]);
     ClustEvalG = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','gap','KList',[1:5]);
     Data.dim{ActiveChannels(c)}=floor(mean([ClustEvalG.OptimalK ClustEvalCH.OptimalK]));
-    Data.dim{ActiveChannels(c)}= 2;
+    %Data.dim{ActiveChannels(c)}= 3;
     figure(ClusterResultsFig)
     subplot(FigPlotNum,FigPlotNum,c)
     [Data.ClusterIdx{ActiveChannels(c)},C,score]=PCA_Analysis5(Data.AlignedSpikes{ActiveChannels(c)},Data.dim{ActiveChannels(c)});
@@ -248,7 +248,7 @@ for c = 1:length(ActiveChannels)
     % PSTH Sorted
     for i=1:Data.dim{ActiveChannels(c)}
         
-        [PSTH,Data.Psth_sort{i},PSTHbinsize]=Build_psth(Data.Rast_sort{i},sampling_freq);
+        [PSTH,Data.Psth_sort{i},PSTHbinsize,Data.SpikeCount{i}]=Build_psth(Data.Rast_sort{i},sampling_freq);
         t_pst=1000*linspace(-10*10^-3,size(Data.Psth_sort{i},1)*binsize_sec,length(Data.Psth_sort{i}));
         sorted_PSTH(i)=figure;
         bar(t_pst,PSTH)
@@ -273,18 +273,27 @@ Data.Spon = cell(1,length(Data.Clusters)); Data.SponStd = cell(1,length(Data.Clu
 %%
 LastSponSpike = max(find(spike_times<stimulus_times(1)));
 for i=1:length(Data.Clusters)
+    SponCount = length(find(Data.ClusteredspikeIdx{i} < stimulus_indexes(1)));
     SponSpikeTrain = nan(1,int32(spike_times(LastSponSpike)*sampling_freq));
     SponSpikeTrain(int32(spike_times(find(Data.ClusteredspikeIdx{i}...
         <=spike_times(LastSponSpike)*sampling_freq))*sampling_freq)) = 1; % Find all spikes of the current cluster before stimulus onset
-    SponVec = smoothdata(SponSpikeTrain,'lowess',sampling_freq,'omitnan');
+    
+    Data.Spon{i} = [Data.Spon{i};SponCount/(size(SponSpikeTrain,2)/sampling_freq/0.15)]; % Calc num of Spon spikes in 100ms window (should be same window as Spike Count Var).
+    %SponVec = smoothdata(SponSpikeTrain,'lowess',sampling_freq,'omitnan');
     %Data.SponStd{i} = std(SponBinned);
 end
 
+%% Prosthetic Intensity Response Curve
+[Data] = ProstheticIntensityCalc(Data,PSTHbinsize,fname);
 
 %% Natural Vis Intensity Curve
 [Data] = NaturalIntensityCalc(Data,PSTHbinsize,fname);
-%% Prosthetic Intensity Response Curve
-[Data] = ProstheticIntensityCalc(Data,PSTHbinsize,fname);
+%% Save Data variable
+SavePath ='C:\Users\Itay\Desktop\Yossi Mandel Lab\Thesis\Data Files\Vis\';
+stimfreq = num2str(1/mean(diff(stimulus_times))); 
+[a,b] = regexp(fname,'_\d*ms'); stimdur = fname(a+1:b-2); 
+[a,b] = regexp(pathname,'Data\\\S{10,10}'); date = pathname(a+5:b);
+save([SavePath,'ProstheticFullFlash_',stimdur,'ms',stimfreq,'Hz',date,'.mat'],"Data");
 %% CPD Selectivity over different data files
 [Data] = CPDCalc(Data,PSTHbinsize,fname);
 %% Write Results into Table & Save Data in a file
