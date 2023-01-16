@@ -151,7 +151,7 @@ for j=1:length(AC)
 
                 for m=1:10
                     %              ind{m}=find(frame_time<=(Event_times{j}(i)-0.02-0.02*(m-1)) & frame_time>=(Event_times{j}(i)-0.04-0.02*(m-1)));
-                    ind{m}=find(frame_time<=(Event_times{AC(j),k}(i)-(0.04+(FrameDuration*10^(-3)*(m-1))))); % Find Frames at least 40ms before spike.
+                    ind{m}=find(frame_time<=(Event_times{AC(j),k}(i)-(0.00+(FrameDuration*10^(-3)*(m-1))))); % Find Frames at least 40ms before spike.
 
                     %             ind_70=find(frame_time<=(Event_times{j}(i)-0.07) & frame_time>=(Event_times{j}(i)-0.120));
                     %             ind_120=find(frame_time<=(Event_times{j}(i)-0.1200));
@@ -251,7 +251,9 @@ for i=1:length(AC)
         end
     %end
 end
-
+%% Save Frame file for STA
+frame = {Frame{12,1}(:,:,:),Frame{10,1}(:,:,:)}; % Insert the Channels and dimensions relevant for further analysis
+save('C:\Users\Itay\Desktop\Yossi Mandel Lab\Thesis\Data Files\RF\29.11.21RF.mat','frame','AC');
 
 %% calculate and plot STA
 % sta= sta_Calc(Frame);

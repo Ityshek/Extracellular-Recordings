@@ -12,8 +12,10 @@ end
 
 % Calculation
 % Amplitude to Intensity Conversion
-B = [0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7;0.42*10^(-3),0.3,0.9,1.45,1.93,2.38,2.8,3.15,3.6,4.05,4.47,4.88,5.3,5.83]; % 1st row are current in Amp. Second row are intensity in mW.
-D = [0.8,0.95,1.25,1.6,2.1,2.7,3.9,4.9;0.097,0.27,0.53,1.01,1.47,2.09,3.03,4.05];
+B = [0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7;...
+    0.42*10^(-3),0.3,0.9,1.45,1.93,2.38,2.8,3.15,3.6,4.05,4.47,4.88,5.3,5.83]; % 1st row are current in Amp. Second row are intensity in mW.
+D = [0.8,0.95,1.25,1.6,2.1,2.7,3.9,4.9;...
+    0.097,0.27,0.53,1.01,1.47,2.09,3.03,4.05];
 %a = [strfind(fname,'Hz')+1,strfind(fname,'amp')];
 %Amp = fname(a(1)+2:a(2)-1);
 %Data.ProstheticIntensity = [Data.ProstheticIntensity;D(find(D == str2num(Amp))+1)]; %Convert to Intensity/mm^2 for 40% duty cycle.

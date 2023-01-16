@@ -1,7 +1,7 @@
 %% Load & Plot Basic Data
 close all;
 clearvars -except Data;
-RastFig = figure; RawFig = figure; PsthFig = figure;
+RastFig = figure; RawFig = figure; 
 [fname,pathname]=uigetfile('*.mat','Choose data file');
 ChannelPosition = [1,9,5,6,14,13,2,10,15,7,12,11,3,4,16,8];
 std_Factor=-4.5;
@@ -87,20 +87,23 @@ for c = 1:FigPlotNum
 
 
         % Build PSTH%
+        PsthFig = figure;
         figure(PsthFig);
         subplot(nRows,nColumn,c)
-        [Psth,binsize_sec,smoothed_Psth,SpikeCount]=Build_psth3(Rast,sampling_freq);
+        [Psth,binsize_sec,smoothed_Psth,SpikeCount,Label]=Build_psth3(Rast,sampling_freq);
         Data.PSTH{c} = Psth;
-        t_pst=1000*linspace(-10*10^-3,size(Psth,1)*binsize_sec,length(Psth));
+        StimTime = round(mean(diff(stimulus_times)),2);
+        t_pst=1000*linspace(-10*10^-3,size(Psth,2)*binsize_sec,length(Psth));
         b = bar(t_pst,Psth);
         hold on
         plot(t_pst,smoothed_Psth,'linewidth',2)
         % figure settings
-        xticks([-10:100:size(Psth,1)*binsize_sec*10^3])
+        %xticklabels(linspace(0,StimTime*1000,5))
+        %xticklabels([-10])
         xlabel('Time [ms]','FontSize',15)
-        ylabel('Firing Rate [Spikes/s]','FontSize',15)
+        ylabel(Label,'FontSize',15)
         title(['Channel ',num2str(RC)])
-        ylim([0 150]);
+        %ylim([0 150]);
 
     end
     count = count+1;
@@ -143,8 +146,8 @@ for c=1:length(ActiveChannels)
     % PCA + Clustering
     ClustEvalCH = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','CalinskiHarabasz','KList',[1:5]);
     ClustEvalG = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','gap','KList',[1:5]);
-    Data.dim{ActiveChannels(c)}=floor(mean([ClustEvalG.OptimalK ClustEvalCH.OptimalK]));
-    %Data.dim{ActiveChannels(c)}= 3;
+    Data.dim{ActiveChannels(c)}=min([ClustEvalG.OptimalK ClustEvalCH.OptimalK]);
+    Data.dim{ActiveChannels(c)}= 2;
     figure(ClusterResultsFig)
     subplot(FigPlotNum,FigPlotNum,c)
     [Data.ClusterIdx{ActiveChannels(c)},C,score]=PCA_Analysis5(Data.AlignedSpikes{ActiveChannels(c)},Data.dim{ActiveChannels(c)});
@@ -214,13 +217,14 @@ for c=1:length(ActiveChannels)
         Data.ISI{ActiveChannels(c)}{i} = (diff(rmmissing(Data.ClusteredspikeIdx{i}))/sampling_freq)*10^3; % Save the ISIs in ms for every cluster
         figure(TIHFig)
         subplot(2,2,i)
-        edges = [0:1:500];
-        histogram(Data.ISI{ActiveChannels(c)}{i}(Data.ISI{ActiveChannels(c)}{i}<500)...
-        ,edges,'Normalization','probability');
+        edges = [0:0.5:100];
+        histogram(Data.ISI{ActiveChannels(c)}{i}...
+        ,edges,'Normalization','pdf');
         xlabel('ISI [ms]')
         ylabel('Probability')
+        ylim([0 0.3])
     end
-   %CorrPlot = CorrFunc(t,Data.ClusteredspikeIdx,Data.dim{ActiveChannels(c)},sampling_freq);
+   CorrPlot = CorrFunc(t,Data.ClusteredspikeIdx,Data.dim{ActiveChannels(c)},sampling_freq);
 end
 %% Sorted Plots
 for c = 1:length(ActiveChannels)
@@ -278,7 +282,7 @@ for i=1:length(Data.Clusters)
     SponSpikeTrain(int32(spike_times(find(Data.ClusteredspikeIdx{i}...
         <=spike_times(LastSponSpike)*sampling_freq))*sampling_freq)) = 1; % Find all spikes of the current cluster before stimulus onset
     
-    Data.Spon{i} = [Data.Spon{i};SponCount/(size(SponSpikeTrain,2)/sampling_freq/0.15)]; % Calc num of Spon spikes in 100ms window (should be same window as Spike Count Var).
+    Data.Spon{i} = [Data.Spon{i};SponCount/(size(SponSpikeTrain,2)/sampling_freq/0.15)]; % Calc num of Spon spikes in 150ms window (should be same window as Spike Count Var).
     %SponVec = smoothdata(SponSpikeTrain,'lowess',sampling_freq,'omitnan');
     %Data.SponStd{i} = std(SponBinned);
 end
@@ -289,6 +293,7 @@ end
 %% Natural Vis Intensity Curve
 [Data] = NaturalIntensityCalc(Data,PSTHbinsize,fname);
 %% Save Data variable
+% Change "SavePath" to the desiered folder
 SavePath ='C:\Users\Itay\Desktop\Yossi Mandel Lab\Thesis\Data Files\Vis\';
 stimfreq = num2str(1/mean(diff(stimulus_times))); 
 [a,b] = regexp(fname,'_\d*ms'); stimdur = fname(a+1:b-2); 

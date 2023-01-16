@@ -20,11 +20,11 @@ count_stim=1;
 Events_ind=find(circshift(raw_data,[0 1])>thresh&raw_data<thresh); % indecies for spike times, detected by thresh.
 
 % remove events inside refractory period
-RefractoryPeriod = 66; % insert in index values 
+RefractoryPeriod = 0; % insert in index values 
 events_ind = [];
 for i=2:length(Events_ind)
     if Events_ind(i)+(2.5*10^-3)*sampling_freq<=length(raw_data) & Events_ind(i)-(2.5*10^-3)*sampling_freq>0 
-    if Events_ind(i) - Events_ind(i-1) > RefractoryPeriod & (max([raw_data(Events_ind(i)-((1.5*10^-3)*sampling_freq):Events_ind(i)+((1.5*10^-3)*sampling_freq))]) < outlier)
+    if Events_ind(i) - Events_ind(i-1) > RefractoryPeriod 
         events_ind = [events_ind,Events_ind(i)];
     end
 end
@@ -32,15 +32,17 @@ end
 
 for i=1:length(events_ind)
     if events_ind(i)-4*10^-3*sampling_freq>0&events_ind(i)+4*10^-3*sampling_freq<length(raw_data) %&circshift(raw_data(events_ind(i)),[0 -1])>-200
-        if max([raw_data(events_ind(i)-((1*10^-3)*sampling_freq):events_ind(i)+((1.5*10^-3)*sampling_freq))]) < outlier
+        if max([raw_data(events_ind(i)-((1.5*10^-3)*sampling_freq):events_ind(i)+((1.5*10^-3)*sampling_freq))]) < outlier
             spike{i}=raw_data(events_ind(i)-2.5*10^-3*sampling_freq:events_ind(i)+2.5*10^-3*sampling_freq); % saves the  i spike's amplitudes
+        else
+            events_ind(i) = NaN;
         end
     end
 end
 
 
 %% build raster
-if VisFlag{1} ==2
+if VisFlag{1} == 2
     rastind = 50;
 else
     rastind = 1;
@@ -52,18 +54,10 @@ end
 
 
         if events_ind(i)>(stimulus_indexes(k)-(10*10^-3)*sampling_freq) && events_ind(i)<stimulus_indexes(k)+(ISI-10^-3)*sampling_freq
-            if max([raw_data(events_ind(i)-((1*10^-3)*sampling_freq):events_ind(i)+((1.5*10^-3)*sampling_freq))]) < outlier
-
                 ind_rast{count_stim}(counter_events)=events_ind(i)-(stimulus_indexes(k)-(10*10^-3)*sampling_freq);
-                spike_stim{count_stim}(:,counter_events)=raw_data(events_ind(i)-3*10^-3*sampling_freq:events_ind(i)+3*10^-3*sampling_freq); %contains 6 msec around neg peak of each spike.
+                spike_stim{count_stim}(:,counter_events)=raw_data(events_ind(i)-2.5*10^-3*sampling_freq:events_ind(i)+2.5*10^-3*sampling_freq); %contains 5 msec around neg peak of each spike.
                 counter_events=counter_events+1;
-            else
-                events_ind(i) = NaN;
-                spike{i} = NaN;
-            end
-
         end
-
     end
     count_stim=count_stim+1;
 end

@@ -1,4 +1,4 @@
-function [Psth,binsize_sec,smoothed_y,SpikeCount,Label]=Build_psth3(Rast,fs)
+function [Psth,binsize_sec,smoothed_y,SpikeCount]=Build_psth3(Rast,fs)
 prompt = {'Choose Spike Calc: (1 = Hz | 2 = Count)','Choose Window Size [ms]:'};
 definpt = {'2','2'}; dlgtitle = 'Input'; dims = [1 35];
 Flag = inputdlg(prompt,dlgtitle,dims,definpt);
@@ -37,7 +37,7 @@ end
 winsize = 5; % window size.
 win = ones(winsize,1);
 smoothed_y = conv(Psth,win,'same')/winsize;
-Label = ['Spike Count [',num2str(Flag{2}),'ms]'];
+Label = ['Spike Count'[]];
 end
 % Calculate number of spikes per 100ms between 10-110ms post stimulus
 temp2 = full(Rast(:,2*fs*0.01:12*fs*0.01));

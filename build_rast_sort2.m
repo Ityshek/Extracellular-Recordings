@@ -6,9 +6,20 @@ for i=1:dim
     Rast_sort{i}=sparse(length(ind_rast_re2),ISI*sampling_freq);
 end
 
-for i=1:length(ind_rast_re2)    
-        k=length(ind_rast_re2{i});
-        idx_2{i}=idx(i:i+k-1);
+% for i=1:length(ind_rast_re2)    
+%         k=length(ind_rast_re2{i});
+%         idx_2{i}=idx(i:i+k-1);
+% end
+
+count = 1;
+for i=1:length(ind_rast_re2)
+    k=length(ind_rast_re2{i});
+    if k ~= 0 && count+k-1 < length(idx)   
+        idx_2{i}=idx(count:count+k-1);
+    else 
+        idx_2{i}=[];
+    end
+    count = count+k;
 end
 
 for k=1:dim
