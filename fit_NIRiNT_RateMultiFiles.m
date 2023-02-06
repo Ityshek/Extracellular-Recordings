@@ -182,6 +182,7 @@ end
 % Plot Average Results
 col = ['r','b'];
 figure();
+ax = axes();
 for k = 1:length(Durs)
 h{k} = semilogx(AVGint_fit{k}*1000,AVGrate_fit{k},'Color',col(k));
 %legend('AutoUpdate','off')
@@ -193,7 +194,9 @@ xlim([10 max(AVGint_fit{k}*1000)])
 ylim([0 1.1])
 xlabel('Intensity [\muW/mm^2]')
 ylabel('Scaled Spike Count')
-
+ax.PlotBoxAspectRatio = [1,1,1]; ax.FontSize = 20;
+ax.XLim = [10,3500];
+axes(ax)
 
 
 
