@@ -34,10 +34,12 @@ end
 
 % Stimulation Threshold
 for i=1:length(Data.Clusters)
-    [RS,RM] = std(Data.Psth_sort{Data.Clusters(i)},'omitnan'); % Calc std and mean of total acticvity  
+    RSTD = std(Data.Psth_sort{Data.Clusters(i)},'omitnan'); % Calc std of total acticvity
+    
     [Val,Ind]= max(Data.Psth_sort{Data.Clusters(i)}((window(1)/10)+3:(window(2)/10)+2));
     R = mean(Data.Psth_sort{Data.Clusters(i)}(Ind+1:Ind+4));
-    if R > RM+2*RS % Look if R window is bigger then 95% of total activity
+    if max(Data.Psth_sort{Data.Clusters(i)}((window(1)/10)+3:(window(2)/10)+2))...
+            > 2*RSTD % Look if R window is bigger then 95% of total activity
         Data.StimThresh{i} = [Data.StimThresh{i};1];
         % Calc Latency (Only if responsive)
         Latency = (find(PSTH((window(1)/10)+2:(window(2)/10)+2)...

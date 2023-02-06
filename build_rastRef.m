@@ -2,7 +2,8 @@ function [Rast,Spike,Av_spike,events_ind,ind_rast,spike_stim,spike_Times]=build_
 
 if VisFlag{1} == 2
 Stim_freq = 2;
-ISI = 0.5;
+%ISI = 0.5;
+ISI=round(median(diff(Stim_times(2:end))),2);
 Rast=sparse(round((length(stimulus_indexes)/50)/ceil(Stim_freq)),round(ISI*sampling_freq)); % 
 else
 Stim_freq=round((1/mode(diff(Stim_times))),2);

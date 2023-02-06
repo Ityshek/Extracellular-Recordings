@@ -92,10 +92,7 @@ for c=1:length(AC)
 
     title(['Cluster Results - Channel ',num2str(AC(c))]);
 
-    for i=1:Data.dim{AC(c)}
-    Data.SortedSpikesIdx{AC(c)}{i} = Aligned_idx(Data.ClusterIdx{AC(c)}==i);
-    [Data.Spon{AC(c)}{i}] = OrientationSponCalc(Data.SortedSpikesIdx{AC(c)}{i},stimulus_times{AC(c)},sampling_freq,BlankScreenSec);
-    end
+
         
     % Sorted Waveforms
     Data.SortedSpikes{AC(c)}=sort_spikes3(Data.ClusterIdx{AC(c)},Data.AlignedSpikes{AC(c)},Data.dim{AC(c)});
@@ -116,6 +113,7 @@ for c=1:length(AC)
 
         CountUnit = CountUnit+1;
     end
+
     %% Rasters & Orientation Tuning Curve
     for d=1:Data.dim{AC(c)}
         RastOrCPDFig{c}{d} = figure('Name',['Channel: ',num2str(AC(c)),'Unit: ',num2str(d)]);
@@ -139,12 +137,26 @@ for c=1:length(AC)
                 
                 %ylabel(['CPD: ',num2str(CPDs(p))],'FontSize',2);
                 PSTHBineSize = 0.15; % binsize for PSTH in Seconds.
-                [PSTH{c}{d}{p}(i,:),binsize_sec]=Build_psth5(Data.SortedRasters{AC(c)}{d}(OrientationStimNums{i}(:,1),:),sampling_freq,PSTHBineSize);
+                %[PSTH{c}{d}{p}(i,:),binsize_sec]=Build_psth5(Data.SortedRasters{AC(c)}{d}(OrientationStimNums{i}(:,1),:),sampling_freq,PSTHBineSize);
+                [PSTH{c}{d}{p}(i,:),binsize_sec,smoothed_y{c}{d}{p}(i,:),SpikeCount{c}{d}{p}(i,:),Label]=Build_psth3(Data.SortedRasters{AC(c)}{d}(OrientationStimNums{i}(:,1),:),sampling_freq);
                 %PSTHBinsForResponse = floor(StimTimeForPSTHCalc/binsize_sec);
                 %ResponsePerOrientation{c}{d}(p,i) = max(PSTH{c}{d}{p}(i,(BlankScreenSec/binsize_sec):end)); % Calculate the max response per orientation over entire stimulus presentation in spikes/sec.
-                ResponsePerOrientation{c}{d}(p,i) = sum(PSTH{c}{d}{p}(i,(BlankScreenSec/binsize_sec):end))/(round(mean(diff(stimulus_times{RC})),1)-BlankScreenSec); % Calc Total Rate over Stim period. 
+                %ResponsePerOrientation{c}{d}(p,i) = sum(PSTH{c}{d}{p}(i,(BlankScreenSec/binsize_sec):end))/(round(mean(diff(stimulus_times{RC})),1)-BlankScreenSec); % Calc Total Rate over Stim period. 
+                CountPerOrientation{c}{d}(p,i) = sum(PSTH{c}{d}{p}(i,(BlankScreenSec/binsize_sec):end));
                 count = count+1;
             end
+   % Sponteneous Activity 
+    for i=1:Data.dim{AC(c)}
+    Data.SortedSpikesIdx{AC(c)}{i} = Aligned_idx(Data.ClusterIdx{AC(c)}==i);
+    [Data.Spon{AC(c)}{i}] = OrientationSponCalc(Data.SortedSpikesIdx{AC(c)}{i},stimulus_times{AC(c)},sampling_freq,BlankScreenSec);
+    end
+
+            prompt = {'Count / Rate? (1=Count | 0=Rate)'};
+            dlgtitle = 'Input';
+            dims = [1 35];
+            definput1 = {'1'};
+            answer1 = inputdlg(prompt,dlgtitle,dims,definput1);
+            if answer1{1} == '0'
             figure(OrResponsePerCPDFig{c}{d})
             subplot(1,length(CPDs),p)
             plot([0:30:330],ResponsePerOrientation{c}{d}(p,:),'b*');
@@ -157,7 +169,20 @@ for c=1:length(AC)
             xlim([-10 340]);
             ylabel('Firing Rate [Spikes/s]');
             %title(['CPD: ',num2str(CPDs(p))]);
-        end
+            else
+            figure(OrResponsePerCPDFig{c}{d})
+            subplot(1,length(CPDs),p)
+            plot([0:30:330],CountPerOrientation{c}{d}(p,:),'b*');
+            hold on
+            ResponsePerCPD(c,d) = mean(CountPerOrientation{c}{d}(p,:));
+            plot([0:30:330],ones(length([0:30:330]),1)*Data.Spon{AC(c)}{d},'r--')
+            ylim([0 max(CountPerOrientation{c}{d}(p,:))+1]);
+            xlabel('Orientation [Deg]');
+            xticks([0:30:330]);
+            xlim([-10 340]);
+            ylabel('Spike Count');
+            end
+            end
     end
 Count = Count+1;
 end

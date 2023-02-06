@@ -169,7 +169,7 @@ for j=1:length(AC)
             end
         end
         %
-        max_val(AC(j),k)=max(max(max(Frame{AC(j),k}(:,:,:))))/255; % Calculate maximal value of each cluster for all 10 frames.
+        max_val(AC(j),k)=max(max(max(Frame{AC(j),k}(:,:,:)))); % Calculate maximal value of each cluster for all 10 frames.
         std_val1(AC(j),k) = std(Frame{AC(j),k}(:,:,:)/255,1,'all');
     end
 end
@@ -237,15 +237,15 @@ for i=1:length(AC)
                 indx_elec =AC(i);
 
                 subplot(3,10,count);
-                %temp=conv2(Frame{indx_elec(end),k}(50:end,90:end,m)/255,f,'same');
-                temp1=Frame{indx_elec(end),k}(50:end,90:end,m)/255;
+                temp=conv2(Frame{indx_elec(end),k}(50:end,90:end,m)/255,f,'same');
+                temp1=Frame{indx_elec(end),k}(50:end,90:end,m);
                 
                 tempScale = temp/(max_val(indx_elec,k));
                 
                 % imagesc(temp/max(max(temp))-mean(mean(temp/max(max(temp))))
                 %imagesc(temp,[0 (max_val(indx_elec,k)+0.001)/255]) % Added a minimal value to avoid [0 0] range in empty clusters
-                imagesc(temp1,[0 max_val(AC(i),k)])
-                %imagesc(temp)
+                imagesc(temp,[0 max_val(AC(i),k)])
+                imagesc(temp,[0 max_val(AC(i),k)])
                 colormap(parula(1000))
                 title([' Cluster:',num2str(k),' Frame:',num2str(m)])
                 count=count+ 1;

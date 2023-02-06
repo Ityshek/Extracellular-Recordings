@@ -4,11 +4,11 @@ clearvars -except Data;
 RastFig = figure; RawFig = figure; PsthFig = figure;
 [fname,pathname]=uigetfile('*.mat','Choose data file');
 ChannelPosition = [1,9,5,6,14,13,2,10,15,7,12,11,3,4,16,8];
-std_Factor=-4.3;
+std_Factor=-5;
 prompt = {'Select Projection System (Screen = 1, Micron =2)', 'Number of Recorded Channels:','Number of the First Recoeded Channel:', 'N rows:','N Column:'};
 dlgtitle = 'Input';
 dims = [1 35];
-definput = {'2','1','22','1','1'};
+definput = {'2','1','17','1','1'};
 answer = inputdlg(prompt,dlgtitle,dims,definput);
 FigPlotNum = str2double(answer{2}); count = str2double(answer{3}); nRows = str2num(answer{4}); nColumn = str2num(answer{5});
 if answer{1} == '2'
@@ -151,7 +151,7 @@ for c=1:length(ActiveChannels)
     ClustEvalCH = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','CalinskiHarabasz','KList',[1:5]);
     ClustEvalG = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','gap','KList',[1:5]);
     Data.dim{ActiveChannels(c)}=min([ClustEvalG.OptimalK ClustEvalCH.OptimalK]);
-    Data.dim{ActiveChannels(c)}= 1;
+    %Data.dim{ActiveChannels(c)}= 1;
     
     figure(ClusterResultsFig)
     subplot(FigPlotNum,FigPlotNum,c)
@@ -231,7 +231,7 @@ for c=1:length(ActiveChannels)
     end
    %CorrPlot = CorrFunc(t,Data.ClusteredspikeIdx,Data.dim{ActiveChannels(c)},sampling_freq);
 end
-%% Sorted Plots
+    %% Sorted Plots
 for c = 1:length(ActiveChannels)
     [Data.Rast_sort]=build_rast_sort2(Data.ClusterIdx{ActiveChannels(c)},stimulus_indexes,sampling_freq,ind_rast,Data.dim{ActiveChannels(c)},stimulus_times);
     for i=1:Data.dim{ActiveChannels(c)}
@@ -286,15 +286,13 @@ SponWindow = (window(2)-window(1))*0.001;
 LastSponSpike = max(find(spike_times<stimulus_times(1)));
 for i=1:length(Data.Clusters)
     SponCount = length(find(Data.ClusteredspikeIdx{i} < stimulus_indexes(1)));
-    SponSpikeTrain = zeros(1,int32(spike_times(LastSponSpike)*sampling_freq));
+    SponSpikeTrain = nan(1,int32(spike_times(LastSponSpike)*sampling_freq));
     SponSpikeTrain(int32(spike_times(find(Data.ClusteredspikeIdx{i}...
         <=spike_times(LastSponSpike)*sampling_freq))*sampling_freq)) = 1; % Find all spikes of the current cluster before stimulus onset
    
     Data.Spon{i} = [Data.Spon{i};SponCount/(size(SponSpikeTrain,2)/sampling_freq/SponWindow)]; % Calc num of Spon spikes in 200ms window (should be same window as Spike Count Var).
-    
-    WinConv = ones(1,0.01*sampling_freq);
-    SponVec = conv(SponSpikeTrain,WinConv,'full'); % Calc Spon Activity with moving average 
-    Data.SponStd{i} = [Data.SponStd{i};std(SponVec)];
+    SponVec = smoothdata(SponSpikeTrain,diff(window)*10^-3*sampling_freq,'omitnan'); % Calc SponActivity with moving average 
+    Data.SponStd{i} = [Data.SponStd{i};std(SponVec,'omitnan')];
 end
 
 %% Prosthetic Intensity Response Curve
@@ -309,7 +307,7 @@ RateCalcWindow = 10; % PSTH Bin Size in ms
 %% Save Data variable
 % Change "SavePath" to the desiered folder
 SavePath ='C:\Users\Itay\Desktop\Yossi Mandel Lab\Thesis\Data Files\Prosthetic\';
-stimfreq = num2str(round(1/mean(diff(stimulus_times)))); 
+stimfreq = num2str(1/mean(diff(stimulus_times))); 
 [a,b] = regexp(fname,'_\d*ms'); Data.StimDur = fname(a+1:b-2); 
 [a,b] = regexp(pathname,'Data\\\S{10,10}'); date = pathname(a+5:b);
 save([SavePath,'ProstheticFullFlash_',Data.StimDur,'ms',stimfreq,'Hz',date,'.mat'],"Data");

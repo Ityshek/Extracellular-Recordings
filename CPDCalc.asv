@@ -29,14 +29,12 @@ end
 if answer{2} =='1'
     for i=1:length(Data.Clusters)
         figure();
-        spon = ones(1,length(Data.CPDResponse{i}))*mean(Data.Spon{i},'omitnan');     
-        plot(Data.CPDs,Data.CPDCount{i},'-',Data.CPDs,Data.Spon{i},'r-');
-        hold on
-        plot(Data.CPDs,Data.CPDCount{i}-Data.Spon{i})
+        spon = ones(1,length(Data.CPDResponse{i}))*mean(Data.Spon{i},'omitnan');
+        plot(Data.CPDs,Data.CPDCount{i},'-',Data.CPDs,spon,'r-');
         xticks(round(linspace(min(Data.CPDs),max(Data.CPDs),10),2));
-        ylabel('Spike Counts','FontSize',20);
+        ylabel('Firing Rate [Spikes/s]','FontSize',20);
         xlabel('CPD','FontSize',20);
-        legend('Response','Spontaneous Activity','')
+        legend('CPD Response','Spontaneous Activity')
         %ylim([0 100]);
     end
 end

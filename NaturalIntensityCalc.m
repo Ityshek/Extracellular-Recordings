@@ -12,15 +12,16 @@ end
 
 % Calculation
 % Amplitude to Intensity Conversion
-%B = [10,20,30,40,50,60,70,80,90,100;0.55,1.2,2.9,5.6,7.9,11.4,18.6,25.6,34.6,42.7]; % 1st row are current in Amp. Second row are intensity in CD/m^2.
-%a = [strfind(fname,'Hz')+1,strfind(fname,'amp')];
-%Amp = fname(a(1)+2:a(2)-1);
-[Int1,Int2] = regexp(fname,'_\d*nW');
+% B = [10,20,30,40,50,60,70,80,90,100;0.55,1.2,2.9,5.6,7.9,11.4,18.6,25.6,34.6,42.7]; % 1st row are current in Amp. Second row are intensity in CD/m^2.
+% a = [strfind(fname,'Hz')+1,strfind(fname,'amp')];
+% Amp = fname(a(1)+2:a(2)-1);
+IntensityTable = [0.55,1.2,2.9,5.6,7.9,11.4,18.6,25.6,34.6,42.7];
+[Int1,Int2] = regexp(fname,'_\d*Sc');
 
-Data.NaturalIntensity = [Data.NaturalIntensity;str2num(fname(Int1+1:Int2-2))]; % Find Stim Intensity in micro-watts/mm^2.
+Data.NaturalIntensity = [Data.NaturalIntensity;IntensityTable(str2num(fname(Int1+1:Int2-3)))]; % Find Stim Intensity in micro-watts/mm^2.
 % Response Calculation
 for i=1:length(Data.Clusters)
-    ResponseWindow = [(20/PSTHbinsize)+1:(100/PSTHbinsize)]; % Define time window for Prosthetic response (10-100ms post trigger). add 2 bins for -10 and 0 bins in PSTH.
+    ResponseWindow = [(10/PSTHbinsize)+2:(110/PSTHbinsize)+1]; % Define time window for Prosthetic response (10-100ms post trigger). add 2 bins for -10 and 0 bins in PSTH.
     Data.NaturalIntensityResponse{i} = [Data.NaturalIntensityResponse{i};round(max(Data.Psth_sort{Data.Clusters(i)}(ResponseWindow)),2)];
     Data.NaturalIntensityCount{i} = [Data.NaturalIntensityCount{i};Data.SpikeCount{i}];
 end
@@ -51,7 +52,7 @@ if answer{2} =='1'
         semilogx([Data.NaturalIntensity],[Data.NaturalIntensityCount{i}],'-',Data.NaturalIntensity,spon,'--')
         %xticks(linspace(0,round(max(Data.NaturalIntensity),0),6))
         xticks([0;Data.NaturalIntensity])
-        ylabel('Spike Count [150ms]','FontSize',20)
+        ylabel('Spike Count [100ms]','FontSize',20)
         xlabel('Intensity log [nW/m^2]','FontSize',20)
         %legend('Intensity Response')%,'Spontaneous Activity');
         title(['Unit ',num2str(i)]);

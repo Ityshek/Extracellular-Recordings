@@ -4,5 +4,7 @@ for i = 1:length(stimulus_times)
 SpikeCount(i) = length(find(spike_times>stimulus_times(i)&spike_times<stimulus_times(i)+BlankScreenSec));
 
 end
-spon = mean(SpikeCount/BlankScreenSec);
+
+SponWindow = mean(diff(spike_times)) - BlankScreenSec;
+spon = mean(SpikeCount);
 end
