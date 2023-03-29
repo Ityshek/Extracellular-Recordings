@@ -3,7 +3,7 @@ clear all
 close all
 global indx stim_indx
 global std_factor;
-std_factor=-4.5;
+std_factor=-5.5;
 ChannelPosition = [1,9,5,6,14,13,2,10,15,7,12,11,3,4,16,8];
 AC = [str2num(cell2mat(inputdlg('Insert the Numbers of the Recorded Channels')))];
 [raw_data, fs,stim_Data,stim_sampling_rate,Begin_record,stimulus_times,Stim_indx,FrameDuration] =load_data_ConcateMultiUnit(AC);
@@ -169,8 +169,8 @@ for j=1:length(AC)
             end
         end
         %
-        max_val(AC(j),k)=max(max(max(Frame{AC(j),k}(:,:,:))))/255; % Calculate maximal value of each cluster for all 10 frames.
-        std_val1(AC(j),k) = std(Frame{AC(j),k}(:,:,:)/255,1,'all');
+        max_val(AC(j),k)=max(max(max(Frame{AC(j),k}(:,:,:)))); % Calculate maximal value of each cluster for all 10 frames.
+        std_val1(AC(j),k) = std(Frame{AC(j),k}(:,:,:),1,'all');
     end
 end
 
@@ -221,7 +221,7 @@ end
 %     [Significance{j,k}] = NestedBootForSTC(im_indx,spike_ind_t{j,k},frame_time,Mcorr,Ds{j,k},fs);
 %     end
 % end
-%% plot the maps 20msec
+%% plot the maps 
 f=fspecial('gaussian',10,10);
 % f=fspecial('gaussian',100,100 );
 indx_elec=[];
@@ -230,23 +230,25 @@ indx_elec=[];
 % range = max(max(max(cell2mat(Frame))));
 for i=1:length(AC)
     %if ~isempty(Aligned_Spikes{AC(i)})
-        figure('Name',['Elec:',num2str(AC(i))]);
-        count = 1;
+        
+        
         for k=1:dim{AC(i)}
+            figure('Name',['Elec:',num2str(AC(i)),' Dim:',num2str(k)]);
+            count = 1;
             for m=1:10
                 indx_elec =AC(i);
 
-                subplot(3,10,count);
+                subplot(3,4,count);
                 %temp=conv2(Frame{indx_elec(end),k}(50:end,90:end,m)/255,f,'same');
-                temp1=Frame{indx_elec(end),k}(50:end,90:end,m)/255;
-                
-                tempScale = temp/(max_val(indx_elec,k));
+                %temp1=Frame{indx_elec(end),k}(50:end,90:end,m);
+                temp1=Frame{indx_elec(end),k}(:,:,m);
+                tempScale = temp1/(max_val(indx_elec,k));
                 
                 % imagesc(temp/max(max(temp))-mean(mean(temp/max(max(temp))))
                 %imagesc(temp,[0 (max_val(indx_elec,k)+0.001)/255]) % Added a minimal value to avoid [0 0] range in empty clusters
-                imagesc(temp1,[0 max_val(AC(i),k)])
-                %imagesc(temp)
-                colormap(parula(1000))
+%                 imagesc(tempScale,[0 1])
+                imagesc(tempScale)
+%                 colormap(parula(1000))
                 title([' Cluster:',num2str(k),' Frame:',num2str(m)])
                 count=count+ 1;
             end

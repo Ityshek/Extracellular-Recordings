@@ -4,18 +4,18 @@ clearvars -except Data;
 RastFig = figure; RawFig = figure; PsthFig = figure;
 [fname,pathname]=uigetfile('*.mat','Choose data file');
 ChannelPosition = [1,9,5,6,14,13,2,10,15,7,12,11,3,4,16,8];
-std_Factor=-4.3;
+std_Factor=-4.5;
 prompt = {'Select Projection System (Screen = 1, Micron =2)', 'Number of Recorded Channels:','Number of the First Recoeded Channel:', 'N rows:','N Column:'};
 dlgtitle = 'Input';
 dims = [1 35];
-definput = {'2','1','22','1','1'};
+definput = {'1','1','1','1','1'};
 answer = inputdlg(prompt,dlgtitle,dims,definput);
 FigPlotNum = str2double(answer{2}); count = str2double(answer{3}); nRows = str2num(answer{4}); nColumn = str2num(answer{5});
 if answer{1} == '2'
 prompt = {'Insert stimulus type (1 for NIR/2 for Vis)','Is the trigger signal distorted? (1=YES, 0=NO)'};
 dlgtitle = 'Input';
 dims = [1 35];
-definput1 = {'1','0'};
+definput1 = {'1','0'};  
 answer1 = inputdlg(prompt,dlgtitle,dims,definput1);
 end
 for c = 1:FigPlotNum
@@ -35,14 +35,14 @@ for c = 1:FigPlotNum
     if ~channelflag
 
 
-        [startIndex,endIndex] = regexp(fname,'_\d*Dur');
+        [startIndex,endIndex] = regexp(fname,'_\d*ms');
         if startIndex ~= 0
-            StimDuration = str2double(fname(startIndex+1:endIndex-3));
+            StimDuration = str2double(fname(startIndex+1:endIndex-2));
         else
             StimDuration = 0; 
         end
-        stimulus_indexes = stimulus_indexes-round(StimDuration/1000*stim_sampling_rate);
-        %stimulus_times = stimulus_times - StimDuration*10^-3; 
+        %stimulus_indexes = stimulus_indexes+round(StimDuration/1000*stim_sampling_rate);
+        %stimulus_times = stimulus_times - (1-StimDuration*10^-3); 
         t=[0:length(raw_data{c})-1]/sampling_freq;
         Data.thresh(c)=std_Factor*nanstd(double(raw_data{c}));
 
@@ -89,10 +89,10 @@ for c = 1:FigPlotNum
 
 
         % Build PSTH%
-         figure(PsthFig);
+        CountWindow = [2 22];
         figure(PsthFig);
         subplot(nRows,nColumn,c)
-        [Psth,binsize_sec,smoothed_Psth,SpikeCount,Label]=Build_psth3(Rast,sampling_freq);
+        [Psth,binsize_sec,smoothed_Psth,SpikeCount,Label]=Build_psth3(Rast,sampling_freq,CountWindow);
         Data.PSTH{c} = Psth;
         StimTime = round(mean(diff(stimulus_times)),2);
         t_pst=1000*linspace(-10*10^-3,size(Psth,2)*binsize_sec-10*10^-3,length(Psth));
@@ -151,7 +151,7 @@ for c=1:length(ActiveChannels)
     ClustEvalCH = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','CalinskiHarabasz','KList',[1:5]);
     ClustEvalG = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','gap','KList',[1:5]);
     Data.dim{ActiveChannels(c)}=min([ClustEvalG.OptimalK ClustEvalCH.OptimalK]);
-    Data.dim{ActiveChannels(c)}= 1;
+    %Data.dim{ActiveChannels(c)}= 2;
     
     figure(ClusterResultsFig)
     subplot(FigPlotNum,FigPlotNum,c)
@@ -180,7 +180,7 @@ for c=1:length(ActiveChannels)
         hold on
         xlabel('Time[mSec]','FontSize',20)
         ylabel('Amplitude[\muV]','FontSize',20)
-        ylim([-250 250]); xlim([0.5 3]);
+        ylim([-250 250]); xlim([1 2.5]); xticklabels(['0';'0.5';'1';'1.5'])
     end
 
 
@@ -231,6 +231,7 @@ for c=1:length(ActiveChannels)
     end
    %CorrPlot = CorrFunc(t,Data.ClusteredspikeIdx,Data.dim{ActiveChannels(c)},sampling_freq);
 end
+
 %% Sorted Plots
 for c = 1:length(ActiveChannels)
     [Data.Rast_sort]=build_rast_sort2(Data.ClusterIdx{ActiveChannels(c)},stimulus_indexes,sampling_freq,ind_rast,Data.dim{ActiveChannels(c)},stimulus_times);
@@ -282,6 +283,8 @@ Data.Clusters = [str2num(cell2mat(inputdlg('Insert the Number of the Relevant Cl
 if ~isfield(Data,'StimThresh')
 Data.Spon = cell(1,length(Data.Clusters)); Data.SponStd = cell(1,length(Data.Clusters));
 end
+% SponFlag = cell2mat(inputdlg('Choose Natural / Prosthetic (1 = N | 0 = P)'));
+% if SponFlag == '0'
 SponWindow = (window(2)-window(1))*0.001;
 LastSponSpike = max(find(spike_times<stimulus_times(1)));
 for i=1:length(Data.Clusters)
@@ -290,53 +293,70 @@ for i=1:length(Data.Clusters)
     SponSpikeTrain(int32(spike_times(find(Data.ClusteredspikeIdx{i}...
         <=spike_times(LastSponSpike)*sampling_freq))*sampling_freq)) = 1; % Find all spikes of the current cluster before stimulus onset
    
-    Data.Spon{i} = [Data.Spon{i};SponCount/(size(SponSpikeTrain,2)/sampling_freq/SponWindow)]; % Calc num of Spon spikes in 200ms window (should be same window as Spike Count Var).
-    
-    WinConv = ones(1,0.01*sampling_freq);
-    SponVec = conv(SponSpikeTrain,WinConv,'full'); % Calc Spon Activity with moving average 
-    Data.SponStd{i} = [Data.SponStd{i};std(SponVec)];
+    NumBins = round(spike_times(LastSponSpike)/SponWindow);
+    BinSizeSpon = int32(size(SponSpikeTrain,2)/NumBins); countSpon = 1;
+    for k=BinSizeSpon:BinSizeSpon:size(SponSpikeTrain,2) - BinSizeSpon
+        SponBinned(countSpon) = sum(SponSpikeTrain(k-BinSizeSpon+1:k+BinSizeSpon));  % Calc num of Spon spikes in 200ms window (should be same window as Spike Count Var).
+        countSpon = countSpon+1; 
+    end
+    Data.Spon{i} = [Data.Spon{i};mean(SponBinned)];
+    Data.SponStd{i} = [Data.SponStd{i};std(SponBinned)];
 end
+% else
+%     for i=1:length(Data.Clusters)
+%         for k = 1:4:length(Data.Psth_sort{Data.Clusters(i)}(window(2)/10:end))
+%             SponBinned(k) = sum(Data.Psth_sort{Data.Clusters(i)}(k:k+4));  
+%             Data.Spon{i} = [Data.Spon{i};mean(SponBinned)];
+%             Data.SponStd{i} = [Data.SponStd{i};std(SponBinned)];
+%         end
+%     end
+% end
 
+%% Natural Vis Intensity Curve
+RateCalcWindow = 10; % PSTH Bin Size in ms 
+if StimTime > 0.5
+    SponFlag2 = 1;
+else 
+    SponFlag2 = 0;
+end
+[Data] = NaturalIntensityCalc(Data,RateCalcWindow,fname,window,PSTH,sampling_freq,SponFlag2);
 %% Prosthetic Intensity Response Curve
 RateCalcWindow = 10; % PSTH Bin Size in ms
 [Data] = ProstheticIntensityCalc(Data,RateCalcWindow,fname,window,PSTH);
-%% Natural Vis Intensity Curve
-RateCalcWindow = 10; % PSTH Bin Size in ms 
-[Data] = NaturalIntensityCalc(Data,RateCalcWindow,fname);
 %% CPD Selectivity over different data files
 RateCalcWindow = 10; % PSTH Bin Size in ms
 [Data] = CPDCalc(Data,RateCalcWindow,fname,sampling_freq);
 %% Save Data variable
 % Change "SavePath" to the desiered folder
-SavePath ='C:\Users\Itay\Desktop\Yossi Mandel Lab\Thesis\Data Files\Prosthetic\';
+SavePath ='C:\Users\Itay\Desktop\Yossi Mandel Lab\Thesis\Data Files\Natural Intensity\SpikeCount\';
 stimfreq = num2str(round(1/mean(diff(stimulus_times)))); 
 [a,b] = regexp(fname,'_\d*ms'); Data.StimDur = fname(a+1:b-2); 
 [a,b] = regexp(pathname,'Data\\\S{10,10}'); date = pathname(a+5:b);
-save([SavePath,'ProstheticFullFlash_',Data.StimDur,'ms',stimfreq,'Hz',date,'.mat'],"Data");
+save([SavePath,'NaturalFullFlash_',Data.StimDur,'ms',stimfreq,'Hz',date,'.mat'],"Data");
 
-%% Write Results into Table & Save Data in a file
-if Data.Clusters > 1
-sheet = table(Data.ProstheticIntensity,Data.ProstheticIntensityResponse{1},Data.ProstheticLatency{1},Data.Spon{1}...
-    ,Data.ProstheticIntensityResponse{2},Data.ProstheticLatency{1},Data.Spon{2},...
-    'VariableNames',{'Intensity[mW/mm^2]','Response[Spikes/Sec] Unit 1','Latency Unit[ms] 1','Baseline Activity[Spikes/Sec] Unit 1'...
-    ,'Response[Spikes/Sec] Unit 2','Latency Unit[ms] 2','Baseline Activity[Spikes/Sec] Unit 2'});
-else
-sheet = table(Data.ProstheticIntensity,Data.ProstheticIntensityResponse{1},Data.ProstheticLatency{1},Data.Spon{1}...
-    ,'VariableNames',{'Intensity[mW/mm^2]','Response[Spikes/Sec] Unit 1','Latency Unit[ms] 1','Baseline Activity[Spikes/Sec] Unit 1'});    
-end
-Path = 'D:\Yossi Mandel Lab\Thesis\Result Tables\';
-Date = pathname(38:47);
-prompt = {'Stimulus Type:','Stim Duration:','Stim Frequency:'};
-definput = {'ProstheticFullFlash','10ms','2Hz'};
-dlgtitle = 'Input';
-dims = [1 35];
-AA = inputdlg(prompt,dlgtitle,dims,definput);
-TableName = [Path,AA{1},'_',AA{2},AA{3},Date,'.xlsx'];
-writetable(sheet,TableName,'AutoFitWidth',1);
-%                                                           %
-Path2 ='D:\Yossi Mandel Lab\Thesis\Data Files\';
-filename = [Path2,AA{1},AA{2},AA{3},Date,'.mat'];
-save(filename,'Data');
-for i=1:length(Data.Clusters)
-savefig(Data.IntensityCurve{i},['D:\Yossi Mandel Lab\SU Data\Raw Data\',Date,'\Results\',AA{1},AA{2},AA{3},'Unit',num2str(i),' Curve']);
-end
+ %% Write Results into Table & Save Data in a file
+% if Data.Clusters > 1
+% sheet = table(Data.ProstheticIntensity,Data.ProstheticIntensityResponse{1},Data.ProstheticLatency{1},Data.Spon{1}...
+%     ,Data.ProstheticIntensityResponse{2},Data.ProstheticLatency{1},Data.Spon{2},...
+%     'VariableNames',{'Intensity[mW/mm^2]','Response[Spikes/Sec] Unit 1','Latency Unit[ms] 1','Baseline Activity[Spikes/Sec] Unit 1'...
+%     ,'Response[Spikes/Sec] Unit 2','Latency Unit[ms] 2','Baseline Activity[Spikes/Sec] Unit 2'});
+% else
+% sheet = table(Data.ProstheticIntensity,Data.ProstheticIntensityResponse{1},Data.ProstheticLatency{1},Data.Spon{1}...
+%     ,'VariableNames',{'Intensity[mW/mm^2]','Response[Spikes/Sec] Unit 1','Latency Unit[ms] 1','Baseline Activity[Spikes/Sec] Unit 1'});    
+% end
+% Path = 'D:\Yossi Mandel Lab\Thesis\Result Tables\';
+% Date = pathname(38:47);
+% prompt = {'Stimulus Type:','Stim Duration:','Stim Frequency:'};
+% definput = {'ProstheticFullFlash','10ms','2Hz'};
+% dlgtitle = 'Input';
+% dims = [1 35];
+% AA = inputdlg(prompt,dlgtitle,dims,definput);
+% TableName = [Path,AA{1},'_',AA{2},AA{3},Date,'.xlsx'];
+% writetable(sheet,TableName,'AutoFitWidth',1);
+% %                                                           %
+% Path2 ='D:\Yossi Mandel Lab\Thesis\Data Files\';
+% filename = [Path2,AA{1},AA{2},AA{3},Date,'.mat'];
+% save(filename,'Data');
+% for i=1:length(Data.Clusters)
+% savefig(Data.IntensityCurve{i},['D:\Yossi Mandel Lab\SU Data\Raw Data\',Date,'\Results\',AA{1},AA{2},AA{3},'Unit',num2str(i),' Curve']);
+% end

@@ -19,7 +19,7 @@ if StimType == '2'
     NumFrames = 2;
     StimChannel = data.CAI_002;
     stim_sampling_rate=data.CAI_002_KHz*1000;
-    sampling_freq=data.CSPK_002_KHz*1000;
+    sampling_freq=data.CSPK_001_KHz*1000;
     for i=1:length(StimChannel)
         if StimChannel(i) <10 && StimChannel(i) > -10
             StimChannel(i) = NaN;

@@ -1,6 +1,6 @@
 close all;
 clear all;
-std_Factor = -4.5;
+std_Factor = -5.5;
 NumOrientations = 12;
 NumReps = 5;
 StimsPerCPD = NumOrientations*NumReps;
@@ -56,7 +56,7 @@ for c = 1:length(RC)
 end
 %% Spike Sorting
 AvgSpkFig = figure(); ClusterResultsFig = figure();
-BlankScreenSec = 3;
+BlankScreenSec = 1;
 prompt = {'Select Channels for Further Analysis:'};
 AC = str2num(str2mat(inputdlg(prompt)));
 prompt = {'Select Row and Column counts for plots:'};
@@ -138,7 +138,8 @@ for c=1:length(AC)
                 %ylabel(['CPD: ',num2str(CPDs(p))],'FontSize',2);
                 PSTHBineSize = 0.15; % binsize for PSTH in Seconds.
                 %[PSTH{c}{d}{p}(i,:),binsize_sec]=Build_psth5(Data.SortedRasters{AC(c)}{d}(OrientationStimNums{i}(:,1),:),sampling_freq,PSTHBineSize);
-                [PSTH{c}{d}{p}(i,:),binsize_sec,smoothed_y{c}{d}{p}(i,:),SpikeCount{c}{d}{p}(i,:),Label]=Build_psth3(Data.SortedRasters{AC(c)}{d}(OrientationStimNums{i}(:,1),:),sampling_freq);
+                CountWindow = [2 22];
+                [PSTH{c}{d}{p}(i,:),binsize_sec,smoothed_y{c}{d}{p}(i,:),SpikeCount{c}{d}{p}(i,:),Label]=Build_psth3(Data.SortedRasters{AC(c)}{d}(OrientationStimNums{i}(:,1),:),sampling_freq,CountWindow);
                 %PSTHBinsForResponse = floor(StimTimeForPSTHCalc/binsize_sec);
                 %ResponsePerOrientation{c}{d}(p,i) = max(PSTH{c}{d}{p}(i,(BlankScreenSec/binsize_sec):end)); % Calculate the max response per orientation over entire stimulus presentation in spikes/sec.
                 %ResponsePerOrientation{c}{d}(p,i) = sum(PSTH{c}{d}{p}(i,(BlankScreenSec/binsize_sec):end))/(round(mean(diff(stimulus_times{RC})),1)-BlankScreenSec); % Calc Total Rate over Stim period. 
@@ -187,25 +188,25 @@ for c=1:length(AC)
 Count = Count+1;
 end
  %% OSI calculation
-for c = 1:length(AC)
-    for i=1:Data.dim{AC(c)}
-        for k=1:size(ResponsePerOrientation{c}{i},1)
-            MaxPerCPD(k) = max(ResponsePerOrientation{c}{i}(k,:));
-        end
-        [m,j] = max(MaxPerCPD);
-        %j = 2;
-        [Rpref,RprefIdx] = max(ResponsePerOrientation{c}{i}(j,:));
-        RprefDeg = (RprefIdx-1)*30;
-        if RprefDeg < 270
-            RorthDeg = RprefDeg+rad2deg(pi/2);
-            Rorthidx = RorthDeg/30+1;
-            Rorth = ResponsePerOrientation{c}{i}(j,Rorthidx);
-        else
-            RorthDeg = RprefDeg-rad2deg(pi/2);
-            Rorthidx = RorthDeg/30+1;
-            Rorth = ResponsePerOrientation{c}{i}(j,Rorthidx);
-        end
-        OSI{c}{i} = (Rpref-Rorth)/(Rpref+Rorth);
-    end
-end
+% for c = 1:length(AC)
+%     for i=1:Data.dim{AC(c)}
+%         for k=1:size(ResponsePerOrientation{c}{i},1)
+%             MaxPerCPD(k) = max(ResponsePerOrientation{c}{i}(k,:));
+%         end
+%         [m,j] = max(MaxPerCPD);
+%         %j = 2;
+%         [Rpref,RprefIdx] = max(ResponsePerOrientation{c}{i}(j,:));
+%         RprefDeg = (RprefIdx-1)*30;
+%         if RprefDeg < 270
+%             RorthDeg = RprefDeg+rad2deg(pi/2);
+%             Rorthidx = RorthDeg/30+1;
+%             Rorth = ResponsePerOrientation{c}{i}(j,Rorthidx);
+%         else
+%             RorthDeg = RprefDeg-rad2deg(pi/2);
+%             Rorthidx = RorthDeg/30+1;
+%             Rorth = ResponsePerOrientation{c}{i}(j,Rorthidx);
+%         end
+%         OSI{c}{i} = (Rpref-Rorth)/(Rpref+Rorth);
+%     end
+% end
 

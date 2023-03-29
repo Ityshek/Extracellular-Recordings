@@ -7,16 +7,17 @@ for c=ActiveChannels(count):ActiveChannels(end)
     name=num2str(c);
     for i=1:length(SignalFiles)
         fname{i} = SignalFiles(i).name;
-        [startIndex,endIndex] = regexp(fname{i},'_\d+CPD');
-        if length(str2mat((fname{i}(startIndex+1:endIndex-3))))<4
-            CPDs(i) = str2double(fname{i}(startIndex+1:endIndex-3))*0.01;
-        else
-            CPDs(i) = str2double(fname{i}(startIndex+1:endIndex-3))*0.001;
-        end
-            if isnan(CPDs)
-                [startIndex,endIndex] = regexp(fname{i},'_\d+FrameDur');
-                CPDs = str2double(fname{i}(startIndex+1:endIndex-8));
+        [startIndex,endIndex] = regexp(fname{i},'_[0123456789._]*CPD');
+        if length(strsplit(fname{i}(startIndex+1:endIndex-3),'_')) >= 1 
+            Valsstr = strsplit(fname{i}(startIndex+1:endIndex-3),'_');
+            for v = 1:length(Valsstr)
+            CPDs(v) =  str2num(Valsstr{v});
             end
+        end
+%             if isnan(CPDs)
+%                 [startIndex,endIndex] = regexp(fname{i},'_\d+FrameDur');
+%                 CPDs = str2double(fname{i}(startIndex+1:endIndex-8));
+%             end
             data{i}=(load([Dir '\' SignalFiles(i).name]));
             if c<=9
                 var_CSPK=['CSPK_00',name];

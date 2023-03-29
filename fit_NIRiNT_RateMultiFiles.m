@@ -72,7 +72,9 @@ for i=1:length(SignalFiles)
     end
 
  
-        Rate{i} = ResponseRate{i}/max(ResponseRate{i}); %  Normalize to Maximal Response.
+        %Rate{i} = ResponseRate{i}/max(ResponseRate{i}); %  Normalize to Maximal Response.       
+        Rate{i} = ResponseRate{i}/ResponseRate{i}(end);
+        
         %Rate{i} = ResponseRate{i};
 %     else
 %         Rate{i} = rate{2}/max(rate{2});
@@ -95,7 +97,7 @@ end
 % for i=1:length(Intensity)
 %     LogIntensity{i} = log10(Intensity{i});
 % end
-%%
+%% Plot Dots
 close all
 for i=1:length(SignalFiles)
     fig{i} = figure();
@@ -106,7 +108,7 @@ for i=1:length(SignalFiles)
         plot(LogIntensity{i},Rate{i},'*',Intensity{i},ones(1,length(Intensity{i}))*Spon(i),'--')
     end
 end
-%%
+%% Fit Single Units
 
 
 % RateAvg{1} = mean([Rate{1};Rate{2}],1); % 4ms
@@ -118,7 +120,7 @@ for i=1:length(fig)
     figure(fig{i});
     % fit the data to a sigmoid{\displaystyle f(x)={\frac {1}{1+e^{-x}}}}
     fun=@(x)sum((Rate{i}-(x(1)./(1+x(2)*exp(-x(3)*Intensity{i})))).^2);
-    [x Eval(i)]=fminsearch(fun, [1 1 1]);
+    [x Eval(i)]=fminsearch(fun, [1 1 10]);
     %options = optimset('MaxFunEvals',10000,'MaxIter',10000);
     %[x Eval(i)]=fminsearch(fun, [max(Rate{i}) 1 1],options);
     int_fit{i}=linspace(MinInt,MaxInt,100);
@@ -134,11 +136,23 @@ for i=1:length(fig)
     xlabel('Intensity [\muW/mm^2]')
     ylabel('Scaled Firing Rate')
 end
+%% Single Unit Dynamic Range
+SelectUnits = [1,2,3,5,6];
+
+for i = 1:length(SelectUnits)
+IndMin(i) = min(find(rate_fit{SelectUnits(i)} >= 0.1));
+IndMax(i) = min(find(rate_fit{SelectUnits(i)} >= 0.9));
+
+ValDMin(i) =  int_fit{i}(IndMin(i))*1000;
+ValDMax(i) =  int_fit{i}(IndMax(i))*1000;
+
+DynamicRange(i) =  20*log10(ValDMax(i)/ValDMin(i)); %Calculate Dynamic Range in dB.
+end
 %%
 prompt = {'Select Units to include in further analysis'};
 dlgtitle = 'Input';
 dims = [1 35];
-definput = {'[1,2,3,4,5,6,7]'};
+definput = {'[1,2,3,5,6]'};
 answer1 = str2num(cell2mat(inputdlg(prompt,dlgtitle,dims,definput)));
 
 for k=1:length(answer1)
@@ -174,164 +188,32 @@ end
 for k = 1:size(AvgCount,1)
     fun=@(x)sum((rmmissing(AvgCount(k,:))-(x(1)./(1+x(2)*exp(-x(3)*AvgInt{k})))).^2);
     [x Eval(i)]=fminsearch(fun, [1 1 1]);
-    AVGint_fit{k}=linspace(MinInt,MaxInt,100);
+    AVGint_fit{k}=linspace(MinInt,MaxInt,300);
     AVGrate_fit{k} =(x(1)./(1+x(2)*exp(-x(3)*AVGint_fit{k})));
 end
 
 %%
 % Plot Average Results
 col = ['r','b'];
+IdxError = [4,8,13,16,21];
 figure();
 ax = axes();
 for k = 1:length(Durs)
-h{k} = semilogx(AVGint_fit{k}*1000,AVGrate_fit{k},'Color',col(k));
+h(k) = semilogx(AVGint_fit{k}*1000,AVGrate_fit{k},'Color',col(k));
 %legend('AutoUpdate','off')
 hold on
-plot(AvgInt{k}*1000,rmmissing(AvgCount(k,:)),'*','Color',col(k));
+[a,b] = intersect(round(AVGint_fit{k},2),round(UAllInt(IdxError),2),'stable');
+errorbar(AVGint_fit{k}(b)*1000,AVGrate_fit{k}(b),StdCount(k,IdxError)/sqrt(size(ResponseMat,2)),'.','Color',col(k))
+%plot(AvgInt{k}*1000,rmmissing(AvgCount(k,:)),'*','Color',col(k));
+hold on
 end
-legend([h{1} h{2}],['4ms ';'10ms'])
+legend([h(1) h(2)],['4ms ';'10ms'])
 xlim([10 max(AVGint_fit{k}*1000)])
 ylim([0 1.1])
 xlabel('Intensity [\muW/mm^2]')
 ylabel('Scaled Spike Count')
 ax.PlotBoxAspectRatio = [1,1,1]; ax.FontSize = 20;
+ax.Box = 'off'; ax.Color = "none";
 ax.XLim = [10,3500];
 axes(ax)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-%%
-% % Fit for AVG
-% for i=1:length(RateAvg)
-%     fun=@(x)sum((RateAvg{i}-(x(1)./(1+x(2)*exp(-x(3)*IntensityAvg{i})))).^2);
-%     options = optimset('MaxFunEvals',10000,'MaxIter',10000);
-%     [x Eval(i)]=fminsearch(fun, [max(Rate{i}) 1 1],options);
-%     %int_fit{i}=linspace(min(Intensity{answer(i)}),max(Intensity{answer(i)}),500);
-%     rate_fit_avg{i} =(x(1)./(1+x(2)*exp(-x(3)*int_fit{i})));
-% end
-% figure();
-% plot(int_fit{1},rate_fit_avg{1},'Color','r')
-% hold on
-% plot(int_fit{1},rate_fit_avg{2},'Color','b')
-% hold on
-% plot(int_fit{1},rate_fit_avg{3},'Color','k','LineWidth',2)
-% legend('4ms','10ms','Avarage')
-% set(gca,'XScale','log')
-% xlabel('Intensity Log [\muW/mm^2]','FontSize',15)
-% ylabel('Scaled Firing Rate','FontSize',15)
-%% Find Stimulation Threshold
-% for k=1:2
-%     thresh(k) = StimThresh(SponNorm(UnitIdx==k));
-%     UnitTresh = cell(1,2);
-%     Thresh = mean(thresh);
-%     for i=1:length(fig)
-%         UnitTresh{UnitIdx(i)} = [UnitTresh{UnitIdx(i)};int_fit{i}(min(find(rate_fit_norm{i}>thresh(k))))];
-%     end
-% end
-% PulseDurSEM(1) = std(UnitTresh{1})/sqrt(length(UnitTresh{1}));
-% PulseDurSEM(2) = std(UnitTresh{2})/sqrt(length(UnitTresh{2}));
-%%
-% for i =  1:length(fig)
-%     Actthresh(i) = int_fit{i}(min(find(rate_fit_norm{i}>=SponNorm(i))));
-% end
-% %%
-% 
-% color = ['r','b'];
-% UnitType = {'-','--'};
-% % prompt = {'Select Units to include in further analysis'};
-% % dlgtitle = 'Input';
-% % dims = [1 35];
-% % definput = {'[3,5,13,14]'};
-% answer = str2num(cell2mat(inputdlg(prompt,dlgtitle,dims,definput)));
-% %Thresh = mean(SponNorm)
-% 
-% RatefitUnitMat = cell(1,2); RatefitNormUnitMat = cell(1,2);
-% figure();
-% for i=1:length(answer)
-%     subplot(1,2,1)
-%     RatefitMat(i,:) = rate_fit{answer(i)};
-%     RatefitUnitMat{UnitIdx(answer(i))} =[RatefitUnitMat{UnitIdx(answer(i))};rate_fit{answer(i)}];
-%     plot(int_fit{i},rate_fit{answer(i)},[UnitType{UnitIdx(answer(i))},color(UnitIdx(i))]...
-%         ,'DisplayName',['Fit',num2str(answer(i)),' Eval=',num2str(Eval(answer(i)))])
-%     xlabel('Intensity [mW/mm^2]','FontSize',15)
-%     ylabel('Firing Rate[Hz]','FontSize',15)
-%     title('Single Units Raw Fitted');
-%     hold on
-%     subplot(1,2,2)
-%     RatefitNormMat(i,:) = rate_fit_norm{answer(i)};
-%     RatefitNormUnitMat{UnitIdx(answer(i))} =[RatefitNormUnitMat{UnitIdx(answer(i))};rate_fit_norm{answer(i)}];
-%     plot(int_fit{i},rate_fit_norm{answer(i)},[UnitType{UnitIdx(answer(i))},color(UnitIdx(i))]...
-%         ,'DisplayName',['Fit',num2str(answer(i)),' Eval=',num2str(Eval(answer(i)))])
-%     ylim([0 1.1])
-%     title('Single Units Scaled Fitted');
-%     hold on
-% end
-% legend();
-% xlabel('Intensity[mW/mm^2]','FontSize',15)
-% ylabel('Firing Rate[Hz]','FontSize',15)
-% %%
-% % figure();
-% % %plot(int_fit{1},mean(RatefitMat,1),'LineWidth',2) % Plot Total average response (fitted)
-% % hold on
-% % plot(int_fit{1},ones(1,length(int_fit{1}))*Thresh,'r--') % Plot Total average  baseline activity
-% % hold on
-% % plot(int_fit{1},mean(RatefitUnitMat{1},1),'b-',int_fit{1},mean(RatefitUnitMat{2},1),'b--')
-% % legend('Baseline Activity','10ms','4ms')
-% % xlabel('Intensity[mW/mm^2]','FontSize',15)
-% % ylabel('Firing Rate[Hz]')
-% %%
-% figure();
-% semilogx(int_fit{1},mean(RatefitNormMat,1),'LineWidth',2,'Color','r') % Plot Total average response (fitted & scaled)
-% set(gca,'xscale','log')
-% hold on
-% [C, ia, ic] = unique(StimDur);
-% Rate4ms = mean(RatefitNormMat(1:2,:),1); Rate10ms = mean(RatefitNormMat(3:4,:),1);
-% semilogx(int_fit{1},Rate4ms,'LineWidth',2,'Color','b')
-% hold on
-% semilogx(int_fit{1},Rate10ms,'LineWidth',2,'Color','k')
-% xlabel('Intensity[\muW/mm^2]','FontSize',15)
-% ylabel('Firing Rate[Hz]')
-% legend('Avarege',num2str(C(1)),num2str(C(2)))
-%%
-%plot(int_fit{1},ones(1,length(int_fit{1}))*Thresh,'r--') % Plot Total average scaled baseline activity
-%ylim([0.1 1.1])
-%hold on
-%plot(int_fit{1},mean(RatefitNormUnitMat{1},1),'b-',int_fit{1},mean(RatefitNormUnitMat{2},1),'b--')
-%semilogx(int_fit{1},mean(RatefitNormUnitMat{1},1),'b-',int_fit{1},mean(RatefitNormUnitMat{2},1),'b--')
-
-%PulseDurThresh(1) = int_fit{i}(min(find(mean(RatefitNormUnitMat{1},1)>thresh(1))));
-%PulseDurThresh(2) = int_fit{i}(min(find(mean(RatefitNormUnitMat{2},1)>thresh(2))));
-% %%
-% for k=1:length(RatefitNormUnitMat)
-%     SEMNorm = std(RatefitNormUnitMat{k})/sqrt(size(RatefitNormUnitMat{k},2));
-%     points = round(linspace(0.01,3,7),1);
-%     for p=1:length(points)
-%         pointidx{k}(p) = min(find(round(int_fit{1},1) == points(p)));
-%         SEMPoints{k}(p) = SEMNorm(pointidx{k}(p));
-%     end
-% end
-% %% Draw SEM values at different points on the curves
-% errorbar(int_fit{1}(pointidx{1}),mean(RatefitNormUnitMat{1}(:,pointidx{1})),SEMPoints{1},'b.')
-% hold on
-% errorbar(int_fit{1}(pointidx{2}),mean(RatefitNormUnitMat{2}(:,pointidx{2})),SEMPoints{2},'b.')
-% hold on
-% plot(int_fit{1},ones(1,length(int_fit{1}))*Thresh,'r--')
-% ylim([0 1.1])
-% xlim([0 3])
-% legend('Stimulation Threshold','10ms','4ms')

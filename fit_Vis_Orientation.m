@@ -36,7 +36,7 @@ hold on
 %%
 fun=@(x)sum((ScaleCount-(x(1)+x(2)*exp(-((orientation{1}-x(3)).^2)/(2*x(4)^2))+x(5)*exp(-((orientation{1}-x(6)).^2)/(2*x(4)^2)))).^2);
 
- [x eval]=fminsearch(fun, [5 1 1 1 1 60]);
+ [x eval]=fminsearch(fun, [1 1 10 100 1 0.5]);
 
 orien_fit=linspace(orientation{1}(1),orientation{1}(end),100);
 rate_fit=(x(1)+x(2)*exp(-((orien_fit-x(3)).^2)/(2*x(4)^2))+x(5)*exp(-((orien_fit-x(6)).^2)/(2*x(4)^2)));
