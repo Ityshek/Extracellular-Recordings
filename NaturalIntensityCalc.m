@@ -21,15 +21,15 @@ if ~isnan(regexp(fname,'_[0123456789.]*CD'))
     [Int1,Int2] = regexp(fname,'_[0123456789.]*CD');
     StimType = 1;
     Data.NaturalIntensity = [Data.NaturalIntensity;str2num(fname(Int1+1:Int2-2))]; % Find Stim Intensity in CD/m^2.
-elseif regexp(fname,'_[0123456789.]*nW')~= []
-    [Int1,Int2] = regexp(fname,'_\w*Sc');
+elseif ~isnan(regexp(fname,'_[0123456789.]*nW'))
+    [Int1,Int2] = regexp(fname,'_[0123456789.]*nW');
     StimType = 2;
     Data.NaturalIntensity = [Data.NaturalIntensity;str2num(fname(Int1+1:Int2-2))]; % Find Stim Intensity in micro-watts/mm^2.
 end
 % Response Calculation
 for i=1:length(Data.Clusters)
     ResponseWindow = [(window(1)/10)+2:(window(2)/10)+2]; % Define time window for Prosthetic response (10-210ms post trigger). add 2 bins for -10 and 0 bins in PSTH.
-    Data.NaturalIntensityResponse{i} = [Data.NaturalIntensityResponse{i};round(max(Data.Psth_sort{Data.Clusters(i)}(ResponseWindow)),2)];
+    Data.NaturalIntensityResponse{i} = [Data.NaturalIntensityResponse{i};round(sum(Data.Psth_sort{Data.Clusters(i)}(ResponseWindow)),2)];
     Data.NaturalIntensityCount{i} = [Data.NaturalIntensityCount{i};Data.SpikeCount{i}];
 end
 
@@ -49,9 +49,10 @@ for i=1:length(Data.Clusters)
     if SponFlag2 ~=1
     RM = Data.Spon{1}(end); RS = Data.SponStd{1}(end);
     else
-    RM = mean(SponBinned);   RS = std(SponBinned);
+    %RM = mean(SponBinned);   RS = std(SponBinned);
+    RM = Data.Spon{1}(end); RS = Data.SponStd{1}(end);
     end
-    if Data.SpikeCount{Data.Clusters(i)} > RM+2*RS % Look if R window is bigger then 95% of total activity
+    if Data.SpikeCount{Data.Clusters(i)} > RM+1*RS % Look if R window is bigger then 95% of total activity
         Data.StimThresh{i} = [Data.StimThresh{i};1];
         % Calc Latency (Only if responsive)
         Latency = (find(PSTH((window(1)/10)+2:(window(2)/10)+2)...
@@ -78,7 +79,7 @@ if answer{2} =='1'
 %         semilogx([Data.NaturalIntensity],[Data.NaturalIntensityResponse{i}],'-',Data.NaturalIntensity,spon,'--')
         %xticks(linspace(0,round(max(Data.NaturalIntensity),1),5))
         xticks([0;Data.NaturalIntensity])
-        ylabel('Spiking Rate[Hz]','FontSize',20)
+        ylabel('Spike Count [200ms]','FontSize',20)
         if StimType == 1
         xlabel('Intensity log [CD/m^2]','FontSize',20)
         else
@@ -104,6 +105,7 @@ if answer{2} =='1'
         title(['Unit ',num2str(i)]);
         ylim([0 max(Data.NaturalIntensityCount{i})+0.1])
         xlim([0 max(Data.NaturalIntensity)])
+        
         %   Latency
         Data.LatencyCurve{i} = figure();
         plot(Data.NaturalIntensity,Data.NaturalLatency{i})

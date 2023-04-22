@@ -13,7 +13,7 @@ for c = 1:length(AC)
     [aligned_Spikes,Data.Average_Spike,Aligned_idx]=Align_spikesRF(AC,waveforms,fs,std_factor,Data.Spike_ind);
     % Calc SNR
     [Data.SNR{AC(c)}] = SNRCalc(waveforms{AC(c)},raw_data{AC(c)}(1:Stim_indx{AC(c)}(1)),thresh(AC(c)));
-
+    
     
     
     
@@ -59,10 +59,10 @@ for c=1:length(ActiveChannels)
     title(['Spike Waveforms Channel ',num2str(ActiveChannels(c))]);
     
     % PCA + Clustering
-    ClustEvalCH = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','CalinskiHarabasz','KList',[1:5]);
-    ClustEvalG = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','gap','KList',[1:5]);
+    ClustEvalCH = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','CalinskiHarabasz','KList',[1:2]);
+    ClustEvalG = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','gap','KList',[1:2]);
     Data.dim{ActiveChannels(c)}=min([ClustEvalG.OptimalK ClustEvalCH.OptimalK]);
-    %Data.dim{ActiveChannels(c)}= 1;
+    %Data.dim{ActiveChannels(c)}= 2;
     
     figure(ClusterResultsFig)
     subplot(FigPlotNum,FigPlotNum,c)
@@ -144,18 +144,19 @@ for c=1:length(ActiveChannels)
 end
 %% Raster & PSTH & Curve
 NumCPD = length(CPDs);
-Nreps = 20;
+Nreps = 21;
 BlankScreenSec = 1;
-CPDVec = [];
-CountWindow = [102 122];
+
+CountWindow = [102 152];
 for c=1:length(ActiveChannels)
 FigCPDCurve = figure();
     for d=1:Data.dim{ActiveChannels(c)}
-    % Raster Plots for all CPDs
+    CPDVec = [];
+        % Raster Plots for all CPDs
 FigRaster = figure(); FigPSTH = figure(); 
 count = 1;
-for IdxCPD = 1:Nreps+1:NumCPD*(Nreps+1)
-    [Data.SortedRasters{AC(c),d}{count}]=build_rast_sort4(Data.ClusterIdx{AC(c)},Stim_indx{AC(c)}(IdxCPD:IdxCPD+Nreps-1)...
+for IdxCPD = 1:Nreps:NumCPD*(Nreps)
+    [Data.SortedRasters{AC(c),d}{count}] = build_rast_sort4(Data.ClusterIdx{AC(c)},Stim_indx{AC(c)}(IdxCPD:IdxCPD+Nreps-1)...
         ,fs,Data.dim{AC(c)},Aligned_idx,stimulus_times{AC(c)}(IdxCPD:IdxCPD+Nreps-1));
     figure(FigRaster);
     subplot(ceil(NumCPD/2),floor(NumCPD/2),count)
@@ -177,6 +178,7 @@ for IdxCPD = 1:Nreps+1:NumCPD*(Nreps+1)
     plot(t_pst,Data.smoothedPSTH{c}{d}{count},'linewidth',2)
     xlabel('Time [ms]')%,'FontSize',20)
     ylabel(Label)%,'FontSize',20)
+    ylim([0 0.8])
     title(['CPD: ', num2str(CPDs(count))])
     CPDVec = [CPDVec;CPDs(count)];
     

@@ -32,7 +32,7 @@ end
 end
 
 for i=1:length(events_ind)
-    if events_ind(i)-4*10^-3*sampling_freq>0&events_ind(i)+4*10^-3*sampling_freq<length(raw_data) %&circshift(raw_data(events_ind(i)),[0 -1])>-200
+    if events_ind(i)-2.5*10^-3*sampling_freq>0&events_ind(i)+2.5*10^-3*sampling_freq<length(raw_data) %&circshift(raw_data(events_ind(i)),[0 -1])>-200
         if max([raw_data(events_ind(i)-((1.5*10^-3)*sampling_freq):events_ind(i)+((1.5*10^-3)*sampling_freq))]) < outlier
             spike{i}=raw_data(events_ind(i)-2.5*10^-3*sampling_freq:events_ind(i)+2.5*10^-3*sampling_freq); % saves the  i spike's amplitudes
         else
