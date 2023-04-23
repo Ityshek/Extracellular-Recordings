@@ -61,7 +61,9 @@ for c = 1:FigPlotNum
         %         legend('Raw Signal','Trigger','Detected Spikes','Threshold')
         ylim([-200 200])
         xlim([0 max(t)])
-
+        xlabel('Time[Sec]','FontSize',20)
+        ylabel('Amplitude[\muV]','FontSize',20)
+        
         % Build raster%
         prompt = {'Insert Upper Thershold Value for spike outliers:'};
         definpt = {'200'}; dlgtitle = 'Input'; dims = [1 35];
@@ -73,9 +75,9 @@ for c = 1:FigPlotNum
         figure(RastFig);
         subplot(nRows,nColumn,c)
         spy(Rast)
-        x=(set(gca, 'XTickLabel',(linspace(-10*10^-3,mean(diff(stimulus_times))-10*10^-3,5))));
+        x=(set(gca,'XTickLabel',(linspace(-10*10^-3,mean(diff(stimulus_times))-10*10^-3,5))));
         xtickc=linspace(-10*10^-3*sampling_freq,round(mean(diff(stimulus_times(2:end))),2)*sampling_freq...
-            -10*10^-3*sampling_freq,6);
+            -10*10^-3*sampling_freq,5);
         names= round(((xtickc/sampling_freq)-10^-3),2)*10^3;
         xlim([-440 43560]);
         % figure settings
@@ -84,13 +86,14 @@ for c = 1:FigPlotNum
         xlabel('Time [ms]','FontSize',15)
         ylabel('Stimulus Repetition','FontSize',15)
         title(['Channel ',num2str(RC)])
-        xlim([0 length(Rast)])
+       
 
 
 
         % Build PSTH%
         CountWindow = [2 22];
         figure(PsthFig);
+        ax = axes();
         subplot(nRows,nColumn,c)
         [Psth,binsize_sec,smoothed_Psth,SpikeCount,Label]=Build_psth3(Rast,sampling_freq,CountWindow);
         Data.PSTH{c} = Psth;
@@ -102,11 +105,12 @@ for c = 1:FigPlotNum
         % figure settings
         %xticklabels(linspace(0,StimTime*1000,5))
         %xticklabels([-10])
-        xlabel('Time [ms]','FontSize',15)
-        ylabel(Label,'FontSize',15)
+        xlabel('Time [ms]','FontSize',20)
+        ylabel(Label,'FontSize',20)
         title(['Channel ',num2str(RC)])
-        %ylim([0 150]);
-
+        ylim([0 1]); % xlim([-10 990]);
+%        ax.PlotBoxAspectRatio = [1,1,1]; ax.FontSize = 20;
+ %       ax.Box = 'off'; ax.Color = "none";
     end
     count = count+1;
     figure(RawFig);
@@ -116,7 +120,9 @@ for c = 1:FigPlotNum
     plot(t,x,'*k')
     
 % Calculate SNR
-    [Data.SNR{c}] = SNRCalc(Spike,raw_data{c}(1:stimulus_indexes(2)),Data.thresh(c));
+    SponIdxSpikes = indx_spike(find(indx_spike<stimulus_indexes(2)));
+    SponSpike = Spike{]};
+    [Data.SNR{c}] = SNRCalc(SponSpike,raw_data{c}(1:stimulus_indexes(2)),Data.thresh(c),SponIdxSpikes);
     
 end
 figure(RawFig);
@@ -131,9 +137,6 @@ FigPlotNum = length(ActiveChannels);
 AvgSpkFig = figure;  ClusterResultsFig = figure;
 col=['r','g','m','c','y','k'];
 for c=1:length(ActiveChannels)
-    
-
-
     % Average Spike
     [Data.AlignedSpikes{ActiveChannels(c)},Data.AverageSpike{ActiveChannels(c)},Aligned_idx]=Align_spikes4(Data.Spike{ActiveChannels(c)},sampling_freq,std_Factor, Data.IndxSpike{ActiveChannels(c)});
     t_spike=((0:length(Data.AverageSpike{ActiveChannels(c)})-1)/sampling_freq)*10^3;
@@ -142,7 +145,7 @@ for c=1:length(ActiveChannels)
     plot(t_spike,Data.AlignedSpikes{ActiveChannels(c)})
     hold on
     plot(t_spike,Data.AverageSpike{ActiveChannels(c)},'k','linewidth',2)
-    xlabel('Time [mSec]','FontSize',20)
+    xlabel('Time [ms]','FontSize',20)
     ylabel('Amplitude [\muV]','FontSize',20)
     ylim([-150 150]);
     title(['Spike Waveforms Channel ',num2str(ActiveChannels(c))]);
@@ -151,7 +154,7 @@ for c=1:length(ActiveChannels)
     ClustEvalCH = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','CalinskiHarabasz','KList',[1:5]);
     ClustEvalG = evalclusters(Data.AlignedSpikes{ActiveChannels(c)},'kmeans','gap','KList',[1:5]);
     Data.dim{ActiveChannels(c)}=min([ClustEvalG.OptimalK ClustEvalCH.OptimalK]);
-    %Data.dim{ActiveChannels(c)}= 2;
+    % Data.dim{ActiveChannels(c)}= 2;
     
     figure(ClusterResultsFig)
     subplot(FigPlotNum,FigPlotNum,c)
@@ -180,7 +183,7 @@ for c=1:length(ActiveChannels)
         hold on
         xlabel('Time[mSec]','FontSize',20)
         ylabel('Amplitude[\muV]','FontSize',20)
-        ylim([-250 250]); xlim([1 2.5]); xlabel()
+        ylim([-250 250]); xlim([1 2.5]); 
     end
 
 
@@ -191,13 +194,13 @@ for c=1:length(ActiveChannels)
     figure();
     subplot(FigPlotNum,FigPlotNum,c)
     %       threshold = Data.thresh(c)*ones(1,length(t));
-    plot(t,raw_data{c},'b',t,stim,'vg',t,threshold{c},'r')
+    plot(t,raw_data{ActiveChannels(c)},'b',t,stim,'vg',t,threshold{ActiveChannels(c)},'r')
 
     % figure settings
-    xlabel('Time[Sec]','FontSize',20)
+    xlabel('Time [sec]','FontSize',20)
     ylabel('Amplitude[\muV]','FontSize',20)
     title(['Channel ',num2str(c+16)])
-    ylim([-400 400])
+    ylim([-250 250])
     xlim([0 max(t)])
     hold on
 
@@ -207,7 +210,7 @@ for c=1:length(ActiveChannels)
         for k = 1:length(Aligned_idx)
             if  Data.ClusterIdx{ActiveChannels(c)}(k) == i
                 Data.ClusteredspikeIdx{i}(k) = Aligned_idx(k);
-                Data.ClusteredVal{i}(k) = raw_data{c}(Aligned_idx(k));
+                Data.ClusteredVal{i}(k) = raw_data{ActiveChannels(c)}(Aligned_idx(k));
             end
         end
         y{i} = nan(1,length(t));
@@ -234,7 +237,7 @@ end
 
 %% Sorted Plots
 for c = 1:length(ActiveChannels)
-    [Data.Rast_sort]=build_rast_sort2(Data.ClusterIdx{ActiveChannels(c)},stimulus_indexes,sampling_freq,ind_rast,Data.dim{ActiveChannels(c)},stimulus_times);
+    [Data.Rast_sort,Data.ind_rast_sort]=build_rast_sort2(Data.ClusterIdx{ActiveChannels(c)},stimulus_indexes,sampling_freq,ind_rast,Data.dim{ActiveChannels(c)},stimulus_times);
     for i=1:Data.dim{ActiveChannels(c)}
         sorted_rast(i)=figure;
         spy(Data.Rast_sort{i})
@@ -275,7 +278,14 @@ for c = 1:length(ActiveChannels)
     end
 
 end
-
+%% Split Waveforms by latency
+ for c = 1:Data.dim{1}
+     latency  = 50; % latency cutoff in ms.
+     WavformSplit(latency,Data.Rast_sort{c},Data.ind_rast_sort{c},...
+         Data.ClusteredspikeIdx{c},Data.SortedSpikes{1}{c},stimulus_indexes,sampling_freq)
+    % title(['Cluster ', num2str(c),' Latency: ',num2str(latency)])
+ 
+ end
 %% Select Relevant Clusters
 Data.Clusters = [str2num(cell2mat(inputdlg('Insert the Number of the Relevant Clusters')))]; % For multi file analysis, insert cluster numbers according of the unit's order from previous files.
 %% Sponteneous Activity calculated from recording prior to 1st trigger.
@@ -287,21 +297,25 @@ end
 % if SponFlag == '0'
 SponWindow = (window(2)-window(1))*0.001;
 LastSponSpike = max(find(spike_times<stimulus_times(1)));
-for i=1:length(Data.Clusters)
-    SponCount = length(find(Data.ClusteredspikeIdx{i} < stimulus_indexes(1)));
-    SponSpikeTrain = zeros(1,int32(spike_times(LastSponSpike)*sampling_freq));
-    SponSpikeTrain(int32(spike_times(find(Data.ClusteredspikeIdx{i}...
-        <=spike_times(LastSponSpike)*sampling_freq))*sampling_freq)) = 1; % Find all spikes of the current cluster before stimulus onset
-   
-    NumBins = round(spike_times(LastSponSpike)/SponWindow);
-    BinSizeSpon = int32(size(SponSpikeTrain,2)/NumBins); countSpon = 1;
-    for k=BinSizeSpon:BinSizeSpon:size(SponSpikeTrain,2) - BinSizeSpon
-        SponBinned(countSpon) = sum(SponSpikeTrain(k-BinSizeSpon+1:k+BinSizeSpon));  % Calc num of Spon spikes in 200ms window (should be same window as Spike Count Var).
-        countSpon = countSpon+1; 
-    end
-    Data.Spon{i} = [Data.Spon{i};mean(SponBinned)];
-    Data.SponStd{i} = [Data.SponStd{i};std(SponBinned)];
-end
+
+[Data] = SponCalc(Data,sampling_freq,stimulus_indexes,window);
+% 
+% for i=1:length(Data.Clusters)
+%     SponCount = length(find(Data.ClusteredspikeIdx{i} < stimulus_indexes(1)));
+%     SponSpikeTrain = zeros(1,int32(spike_times(LastSponSpike)*sampling_freq));
+%     SponSpikeTrain(int32(spike_times(find(Data.ClusteredspikeIdx{i}...
+%         <=spike_times(LastSponSpike)*sampling_freq))*sampling_freq)) = 1; % Find all spikes of the current cluster before stimulus onset
+%    
+%     NumBins = round(spike_times(LastSponSpike)/SponWindow);
+%     BinSizeSpon = int32(size(SponSpikeTrain,2)/NumBins); countSpon = 1;
+%     for k=BinSizeSpon:BinSizeSpon:size(SponSpikeTrain,2) - BinSizeSpon
+%         SponBinned(countSpon) = sum(SponSpikeTrain(k-BinSizeSpon+1:k+BinSizeSpon));  % Calc num of Spon spikes in 200ms window (should be same window as Spike Count Var).
+%         countSpon = countSpon+1; 
+%     end
+%     Data.Spon{i} = [Data.Spon{i};mean(SponBinned)];
+%     Data.SponStd{i} = [Data.SponStd{i};std(SponBinned)];
+% 
+% end
 % else
 %     for i=1:length(Data.Clusters)
 %         for k = 1:4:length(Data.Psth_sort{Data.Clusters(i)}(window(2)/10:end))
@@ -328,7 +342,7 @@ RateCalcWindow = 10; % PSTH Bin Size in ms
 [Data] = CPDCalc(Data,RateCalcWindow,fname,sampling_freq);
 %% Save Data variable
 % Change "SavePath" to the desiered folder
-SavePath ='C:\Users\Itay\Desktop\Yossi Mandel Lab\Thesis\Data Files\Natural Intensity\SpikeCount\';
+SavePath ='C:\Users\Itay\Desktop\Yossi Mandel Lab\Extracellular Recordings\Results\Data\';
 stimfreq = num2str(round(1/mean(diff(stimulus_times)))); 
 [a,b] = regexp(fname,'_\d*ms'); Data.StimDur = fname(a+1:b-2); 
 [a,b] = regexp(pathname,'Data\\\S{10,10}'); date = pathname(a+5:b);
@@ -360,3 +374,7 @@ save([SavePath,'NaturalFullFlash_',Data.StimDur,'ms',stimfreq,'Hz',date,'.mat'],
 % for i=1:length(Data.Clusters)
 % savefig(Data.IntensityCurve{i},['D:\Yossi Mandel Lab\SU Data\Raw Data\',Date,'\Results\',AA{1},AA{2},AA{3},'Unit',num2str(i),' Curve']);
 % end
+RastCount = 0; 
+for l=1:length(ind_rast) 
+    RastCount = RastCount+length(ind_rast{l});
+end

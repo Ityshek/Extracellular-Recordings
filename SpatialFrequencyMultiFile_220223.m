@@ -15,9 +15,6 @@ for c = 1:length(AC)
     [Data.SNR{AC(c)}] = SNRCalc(waveforms{AC(c)},raw_data{AC(c)}(1:Stim_indx{AC(c)}(1)),thresh(AC(c)));
     
     
-    
-    
-    
     % Plot Raw Data + Spikes
     t=[0:length(raw_data{AC(c)})-1]/fs;
     threshold = thresh(AC(c))*ones(1,length(t));
@@ -233,3 +230,17 @@ end
 xlabel('CPD'); ylabel(['Spike Count [',num2str((CountWindow(2)-CountWindow(1))*10),'ms]'])
 end
 end
+%% Save the Plots
+% Change "SavePath" to the desiered folder
+[a,b] = regexp(pathname,'Data\\\S{10,10}');
+date = pathname(a+5:b);
+[a,b] = regexp(fname,'Loc\d*'); Loc = fname(a:b);
+SavePath = ('C:\Users\....\Figures\');
+save([SavePath,'SpatialFrequencyPlot_',date,Loc,'.fig'],"FigCPDCurve");
+%% Save the Data Variable
+% Change "SavePath" to the desiered folder
+SavePath ='C:\Users\.....\Data\';
+stimfreq = num2str(round(1/mean(diff(stimulus_times)))); 
+[a,b] = regexp(fname,'_\d*ms'); Data.StimDur = fname(a+1:b-2); 
+[a,b] = regexp(pathname,'Data\\\S{10,10}'); date = pathname(a+5:b);
+save([SavePath,'SpatialFrequency_',Data.StimDur,'ms',stimfreq,'Hz',date,'.mat'],"Data");

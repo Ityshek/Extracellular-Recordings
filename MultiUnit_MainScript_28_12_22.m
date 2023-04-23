@@ -4,7 +4,7 @@ clearvars -except Data;
 RastFig = figure; RawFig = figure; PsthFig = figure;
 [fname,pathname]=uigetfile('*.mat','Choose data file');
 ChannelPosition = [1,9,5,6,14,13,2,10,15,7,12,11,3,4,16,8];
-std_Factor=-4;
+std_Factor=-4.5;
 prompt = {'Select Projection System (Screen = 1, Micron =2)', 'Number of Recorded Channels:','Number of the First Recoeded Channel:', 'N rows:','N Column:'};
 dlgtitle = 'Input';
 dims = [1 35];
@@ -120,7 +120,9 @@ for c = 1:FigPlotNum
     plot(t,x,'*k')
     
 % Calculate SNR
-    [Data.SNR{c}] = SNRCalc(Spike,raw_data{c}(1:stimulus_indexes(2)),Data.thresh(c));
+    SponIdxSpikes = indx_spike(find(indx_spike<stimulus_indexes(2)));
+    SponSpike = Spike(1:length(SponIdxSpikes));
+    [Data.SNR{c}] = SNRCalc(SponSpike,raw_data{c}(1:stimulus_indexes(2)),Data.thresh(c),SponIdxSpikes);
     
 end
 figure(RawFig);
