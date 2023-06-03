@@ -33,55 +33,54 @@ for i=1:length(Data.Clusters)
     Data.NaturalIntensityCount{i} = [Data.NaturalIntensityCount{i};Data.SpikeCount{i}];
 end
 
-% Stimulation Threshold
+%% Stimulation Threshold
 for i=1:length(Data.Clusters)
-    %     [RS,RM] = std(Data.Psth_sort{Data.Clusters(i)},'omitnan'); % Calc std and mean of total acticvity
-    [Val,Ind]= max(Data.Psth_sort{Data.Clusters(i)}((window(1)/10)+3:(window(2)/10)+2));
-    R = sum(Data.Psth_sort{Data.Clusters(i)}(Ind+1:Ind+4));
-    count = 1;
-    Skips = (window(2)-window(1))/10;
-    for k = window(2)/10+1+Skips:Skips:length(Data.Psth_sort{Data.Clusters(i)})
-        temp = full(Data.Rast_sort{Data.Clusters(i)}(:,(k-Skips)*0.01*sampling_freq:(k)*0.01*sampling_freq));
-        %SponBinned(count) = sum(Data.Psth_sort{Data.Clusters(i)}(k:k+3));
-        SponBinned(count) = sum(sum(temp))/size(temp,1);    
-        count = count+1;
-    end
-    if SponFlag2 ~=1
-    RM = Data.Spon{1}(end); RS = Data.SponStd{1}(end);
-    else
+    %     %     [RS,RM] = std(Data.Psth_sort{Data.Clusters(i)},'omitnan'); % Calc std and mean of total acticvity
+    [Val,Ind]= max(PSTH((window(1)/10)+3:(window(2)/10)+2));
+    %     R = sum(Data.Psth_sort{Data.Clusters(i)}(Ind+1:Ind+4));
+    %     count = 1;
+    %     Skips = (window(2)-window(1))/10;
+    %     for k = window(2)/10+1+Skips:Skips:length(Data.Psth_sort{Data.Clusters(i)})
+    %         temp = full(Data.Rast_sort{Data.Clusters(i)}(:,(k-Skips)*0.01*sampling_freq:(k)*0.01*sampling_freq));
+    %         %SponBinned(count) = sum(Data.Psth_sort{Data.Clusters(i)}(k:k+3));
+    %         SponBinned(count) = sum(sum(temp))/size(temp,1);
+    %         count = count+1;
+    %     end
     %RM = mean(SponBinned);   RS = std(SponBinned);
+
+
     RM = Data.Spon{1}(end); RS = Data.SponStd{1}(end);
-    end
-    if Data.SpikeCount{Data.Clusters(i)} > RM+1*RS % Look if R window is bigger then 95% of total activity
+    if length(find(PSTH(window(1)/10:window(2)/10)>RM+1*RS)) > 3 % Check for at least 3 bins in PSTH higher then 95% of baseline activity inside response window.
+   %if Data.SpikeCount{Data.Clusters(i)} > RM+2*RS % Look if R window is bigger then 95% of total activity
         Data.StimThresh{i} = [Data.StimThresh{i};1];
+
         % Calc Latency (Only if responsive)
-        Latency = (find(PSTH((window(1)/10)+2:(window(2)/10)+2)...
-            == max(PSTH((window(1)/10)+2:(window(2)/10)+2)),1))*PSTHbinsize;
+
+%         Latency = (min(find(Data.Psth_sort{Data.Clusters(i)}((window(1)/10)+3:(window(2)/10)+2)>0.5*Val))+1)*10; % Calc Latency as first bin in smoothed PSTH to pass 50% from max response in window.
+        Latency = (min(find(PSTH((window(1)/10)+3:(window(2)/10)+2)>RM+1*RS))+1)*10; % Calc Latency as first bin in smoothed PSTH to pass stimulation threshold.
+
+        %         Latency = (find(PSTH((window(1)/10)+2:(window(2)/10)+2)...
+        %        == max(PSTH((window(1)/10)+2:(window(2)/10)+2)),1))*PSTHbinsize;
         Data.NaturalLatency{i} = [Data.NaturalLatency{i};Latency];
-            else
+    else
         Data.StimThresh{i} = [Data.StimThresh{i};0];
         Data.NaturalLatency{i} = [Data.NaturalLatency{i};nan];
     end
 end
 
-% Prosthetic Response Latency
-% % for i=1:length(Data.Clusters)
-% %     V = min(find(round(Data.Psth_sort{Data.Clusters(i)}(ResponseWindow),2) == Data.NaturalIntensityResponse{i}(end))+min(ResponseWindow)-1);
-% %     Data.NaturalLatency{i} = [Data.NaturalLatency{i};(V-2)*PSTHbinsize]; % Calculate latency of response in mSec.
-% % end
 
 if answer{2} =='1'
-    % Plotting
+    %%  Plotting
     %   Spiking Rate
     for i=1:length(Data.Clusters)
-        Data.IntensityCurve{i} = figure();
+        %Data.IntensityCurve{i} = figure();
         spon = ones(1,length(Data.NaturalIntensityResponse{i}))*(mean(Data.Spon{i}));
-%         semilogx([Data.NaturalIntensity],[Data.NaturalIntensityResponse{i}],'-',Data.NaturalIntensity,spon,'--')
+        %         semilogx([Data.NaturalIntensity],[Data.NaturalIntensityResponse{i}],'-',Data.NaturalIntensity,spon,'--')
         %xticks(linspace(0,round(max(Data.NaturalIntensity),1),5))
         xticks([0;Data.NaturalIntensity])
         ylabel('Spike Count [200ms]','FontSize',20)
         if StimType == 1
-        xlabel('Intensity log [CD/m^2]','FontSize',20)
+            xlabel('Intensity log [CD/m^2]','FontSize',20)
         else
             xlabel('Intensity log [nW/mm^2]','FontSize',20)
         end
@@ -92,12 +91,12 @@ if answer{2} =='1'
         % Spike Count
         Data.IntensityCurve{i} = figure();
         spon = ones(1,length(Data.NaturalIntensityResponse{i}))*(mean(Data.Spon{i}));
-%         semilogx([Data.NaturalIntensity],[Data.NaturalIntensityCount{i}],'-',Data.NaturalIntensity,spon,'--')
+        semilogx([Data.NaturalIntensity],[Data.NaturalIntensityCount{i}],'-',Data.NaturalIntensity,spon,'--')
         %xticks(linspace(0,round(max(Data.NaturalIntensity),0),6))
         xticks([0;Data.NaturalIntensity])
         ylabel('Spike Count','FontSize',20)
         if StimType == 1
-        xlabel('Intensity log [CD/m^2]','FontSize',20)
+            xlabel('Intensity log [CD/m^2]','FontSize',20)
         else
             xlabel('Intensity log [nW/mm^2]','FontSize',20)
         end
@@ -105,14 +104,14 @@ if answer{2} =='1'
         title(['Unit ',num2str(i)]);
         ylim([0 max(Data.NaturalIntensityCount{i})+0.1])
         xlim([0 max(Data.NaturalIntensity)])
-        
+
         %   Latency
         Data.LatencyCurve{i} = figure();
         plot(Data.NaturalIntensity,Data.NaturalLatency{i})
         xticks(linspace(0,round(max(Data.NaturalIntensity),1),5))
         ylabel('Latency[ms]','FontSize',20)
         if StimType == 1
-        xlabel('Intensity log [CD/m^2]','FontSize',20)
+            xlabel('Intensity log [CD/m^2]','FontSize',20)
         else
             xlabel('Intensity log [nW/mm^2]','FontSize',20)
         end

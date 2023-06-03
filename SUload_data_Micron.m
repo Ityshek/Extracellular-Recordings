@@ -19,7 +19,7 @@ if StimType == '2'
     NumFrames = 2;
     StimChannel = data.CAI_002;
     stim_sampling_rate=data.CAI_002_KHz*1000;
-    sampling_freq=data.CSPK_001_KHz*1000;
+    sampling_freq=getfield(data,[var_str,'_KHz'])*1000;
     for i=1:length(StimChannel)
         if StimChannel(i) <10 && StimChannel(i) > -10
             StimChannel(i) = NaN;
@@ -65,5 +65,5 @@ else
         stim(round(stimulus_times*stim_sampling_rate))=  stim_thresh;
     end
 end
-Begin_record=data.CSPK_001_TimeBegin;
+Begin_record=getfield(data,[var_str,'_TimeBegin']);
 end

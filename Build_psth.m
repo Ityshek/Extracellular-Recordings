@@ -64,6 +64,6 @@ win = ones(winsize,1);
 smoothed_y = conv(Psth,win,'same')/winsize;
 Label = ['Spike Count [',num2str(Flag{2}),'ms]'];
 end
-% Calculate number of spikes per 100ms between 10-110ms post stimulus
+% Calculate number of spikes per 200ms between 10-210ms post stimulus
 temp2 = full(Rast(:,window(1)*0.001*fs+440:window(2)*0.001*fs+440));
 SpikeCount = sum(sum(temp2))/size(temp2,1);

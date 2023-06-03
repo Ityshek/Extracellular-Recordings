@@ -1,7 +1,7 @@
 ax = gca; 
 h = findobj(gca,'Type','line');
 y = h.YData; V = y;
-alpha = 0.001;
+alpha = 0.05;
 [H,p_value]=Mann_Kendall(V,alpha);
 
 

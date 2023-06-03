@@ -10,7 +10,8 @@ Stim_freq=round((1/mode(diff(Stim_times))),2);
 %Stim_freq = 1; % for 1Hz 10 frame trigger
 ISI=round(median(diff(Stim_times(2:end))),2);
 %ISI=1; % for 1Hz 10 frame trigger
-Rast=sparse(round(length(stimulus_indexes)/ceil(Stim_freq)),round(ISI*sampling_freq)); % 
+Rast=sparse(round(length(stimulus_indexes)/ceil(Stim_freq)),round(ISI*sampling_freq));
+%Rast=sparse(round(length(stimulus_indexes)),round(ISI*sampling_freq)); % 
 end
 %Rast=sparse(round(length(stimulus_indexes)/ceil(Stim_freq)),round(mean(diff(Stim_times)),2)*sampling_freq+10*10^-3*sampling_freq); % for 1Hz 10 frame trigger
 
@@ -33,7 +34,7 @@ end
 
 for i=1:length(events_ind)
     if events_ind(i)-2.5*10^-3*sampling_freq>0&events_ind(i)+2.5*10^-3*sampling_freq<length(raw_data) %&circshift(raw_data(events_ind(i)),[0 -1])>-200
-        if max([raw_data(events_ind(i)-((1.5*10^-3)*sampling_freq):events_ind(i)+((1.5*10^-3)*sampling_freq))]) < outlier
+        if max([raw_data(events_ind(i)-((2.5*10^-3)*sampling_freq):events_ind(i)+((2.5*10^-3)*sampling_freq))]) < outlier
             spike{i}=raw_data(events_ind(i)-2.5*10^-3*sampling_freq:events_ind(i)+2.5*10^-3*sampling_freq); % saves the  i spike's amplitudes
         else
             events_ind(i) = NaN;

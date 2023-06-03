@@ -38,7 +38,10 @@ AllIntP = unique(IntProsthetic); AllIntN = unique(IntNatural);
 
 LatMatN = nan([length(AllIntN) length(LatencyNatural)]);countN = 1;
 for i = 1:length(AllIntN)
-for k = 1:length(LatencyNatural)
+LatVecN(i) = mean(LatencyNatural(find(AllIntN(i) == IntNatural)));
+    
+    
+    for k = 1:length(LatencyNatural)
 if IntNatural(k) == AllIntN(i)
 LatMatN(i,countN) = LatencyNatural(k);
 countN = countN +1;
@@ -71,20 +74,20 @@ FN = fit(AllIntN',LatN,'poly1');
 Nfig = figure();axN = axes();
 plot(FN,AllIntN,LatN)
 ylabel('Latency [ms]')
-xlabel ('Intensity [cd/m^2]')
+xlabel ('Intensity [nW/mm^2]')
 ylim([0 120])
 axN.PlotBoxAspectRatio = [1,1,1]; axN.FontSize = 20;
 axN.Box = 'off'; axN.Color = "none"; legend('off')
 axes(axN)
 %set(axN,'XScale','log')
 %xlabel(log10(AllIntN))
-
-FP = fit(AllIntP',LatP,'poly1');
+Pidx = find(~isnan(LatP));
+FP = fit(AllIntP(Pidx)',LatP(Pidx),'poly1');
 Pfig = figure();axP = axes();
 plot(FP,AllIntP,LatP)
 ylabel('Latency [ms]')
 xlabel ('Intensity [mW/m^2]')
-ylim([0 120])
+%ylim([0 120])
 axP.PlotBoxAspectRatio = [1,1,1]; axP.FontSize = 20;
 axP.Box = 'off'; axP.Color = "none"; legend('off')
 axes(axP)
@@ -94,7 +97,7 @@ axes(axP)
 
 %%
 figure(); ax = axes();
-Names = categorical({'Natural (N = 4)','Prosthetic (N = 7)'});
+Names = categorical({'Natural (N = 18)','Prosthetic (N = 12)'});
 bar(Names,[AvgLNat,AvgLPros],0.4)
 hold on
 errorbar(Names,[AvgLNat,AvgLPros],[StdLNat,StdLPros],'.','LineWidth',2)
