@@ -22,7 +22,7 @@ function [Psth,binsize_sec,smoothed_y,SpikeCount,Label,window]=Build_psth(Rast,f
 %     smoothed_y = conv(Psth,win,'same')/winsize;
 %     PSTHbinsize =binsize/fs*10^3;
     %%
-prompt = {'Choose Spike Calc: (1 = Hz | 2 = Count)','Choose Bin Size [ms]:','choose Window in in ms post-stimulus:' };
+prompt = {'Choose Spike Calc: (1 = Hz | 2 = Count)','Choose Bin Size [ms]:','choose Window in ms post-stimulus:' };
 definpt = {'2','10','[10 210]'}; dlgtitle = 'Input'; dims = [1 35];
 Flag = inputdlg(prompt,dlgtitle,dims,definpt);
 window = str2num(Flag{3});

@@ -1,18 +1,19 @@
 %% Load the data files and Concat
 clear all; close all;
 
+
 AC = [str2num(cell2mat(inputdlg('Insert the Numbers of the Recorded Channels')))];
-[raw_data, fs,stim_Data,stim_sampling_rate,Begin_record,stimulus_times,Stim_indx,CPDs] =load_data_ConcateMultiUnit(AC);
+[raw_data, fs,stim_Data,stim_sampling_rate,Begin_record,stimulus_times,Stim_indx,CPDs,pathname] =load_data_ConcateMultiUnit(AC);
 
 %% Plot Raw Data
-std_factor = -4.5;        
+std_factor = -4;        
 FigRawData = figure();
 for c = 1:length(AC)
     % Find Spikes
     [Data.Spike_ind,waveforms,thresh]=find_spikesANDwaves(AC,raw_data,fs,std_factor,Stim_indx);
     [aligned_Spikes,Data.Average_Spike,Aligned_idx]=Align_spikesRF(AC,waveforms,fs,std_factor,Data.Spike_ind);
     % Calc SNR
-    [Data.SNR{AC(c)}] = SNRCalc(waveforms{AC(c)},raw_data{AC(c)}(1:Stim_indx{AC(c)}(1)),thresh(AC(c)));
+    [Data.SNR{AC(c)}] = SNRCalc(waveforms{AC(c)},raw_data{AC(c)}(1:Stim_indx{AC(c)}(1)),thresh(AC(c)),Data.Spike_ind{AC(c)});
     
     
     % Plot Raw Data + Spikes
@@ -139,15 +140,17 @@ for c=1:length(ActiveChannels)
 %     end
    %CorrPlot = CorrFunc(t,Data.ClusteredspikeIdx,Data.dim{ActiveChannels(c)},sampling_freq);
 end
+%% Select Relevant Clusters
+Data.Clusters = [str2num(cell2mat(inputdlg('Insert the Number of the Relevant Clusters')))]; % For multi file analysis, insert cluster numbers according of the unit's order from previous files.
 %% Raster & PSTH & Curve
 NumCPD = length(CPDs);
-Nreps = 21;
+Nreps = 101;
 BlankScreenSec = 1;
-
-CountWindow = [102 152];
+CountWindow = [102 152]; %win size in ms divided by 10
+OffCountWindow = CountWindow-100;
 for c=1:length(ActiveChannels)
 FigCPDCurve = figure();
-    for d=1:Data.dim{ActiveChannels(c)}
+    for d=1:Data.Clusters
     CPDVec = [];
         % Raster Plots for all CPDs
 FigRaster = figure(); FigPSTH = figure(); 
@@ -156,7 +159,7 @@ for IdxCPD = 1:Nreps:NumCPD*(Nreps)
     [Data.SortedRasters{AC(c),d}{count}] = build_rast_sort4(Data.ClusterIdx{AC(c)},Stim_indx{AC(c)}(IdxCPD:IdxCPD+Nreps-1)...
         ,fs,Data.dim{AC(c)},Aligned_idx,stimulus_times{AC(c)}(IdxCPD:IdxCPD+Nreps-1));
     figure(FigRaster);
-    subplot(ceil(NumCPD/2),floor(NumCPD/2),count)
+    subplot(1,floor(NumCPD),count)
     spy(Data.SortedRasters{AC(c),d}{count}{1},'k|',5) %,BlankScreenSec*sampling_freq:end))
     xtickc=int32(linspace(1*10^-3*fs,length(Data.SortedRasters{AC(c),d}{count}{1}(:,:)),5)); % -BlankScreenSec*sampling_freq
     names= round(((double(xtickc)/fs)-10^-3),1)*10^3;
@@ -168,8 +171,14 @@ for IdxCPD = 1:Nreps:NumCPD*(Nreps)
     [Data.PSTH{c}{d}{count},binsize_sec,Data.smoothedPSTH{c}{d}{count},Data.SpikeCount{c}{d}(count),Label]=Build_psth3(Data.SortedRasters{AC(c),d}{count}{1},fs,CountWindow);
     t_pst=1000*linspace(-10*10^-3,size(Data.PSTH{c}{d}{count},2)*binsize_sec-10*10^-3,...
         length(Data.PSTH{c}{d}{count}));
+    
+    % Off response Calc
+    temp = full(Data.SortedRasters{AC(c),d}{count}{1}(:,OffCountWindow(1)*fs*0.01:OffCountWindow(2)*fs*0.01));
+    Data.OffCount{c}{d}(count) = sum(sum(temp))/size(temp,1);
+    
+    % Plot
     figure(FigPSTH);
-    subplot(ceil(NumCPD/2),floor(NumCPD/2),count)
+    subplot(1,floor(NumCPD),count)
     bar(t_pst,Data.PSTH{c}{d}{count})
     hold on
     plot(t_pst,Data.smoothedPSTH{c}{d}{count},'linewidth',2)
@@ -216,6 +225,7 @@ end
 % Plot Curve
 figure(FigCPDCurve);
 SponFlag = inputdlg('Subtracte Baseline Activity? (1 = yes | 0 = No)');
+Data.response_magnitude = mean(Data.SpikeCount{c}{1}/Data.Spon{c}{d});
 if SponFlag{1} == '1'
     Data.CountNoSpon{c}{d} = Data.SpikeCount{c}{1}-Data.Spon{c}{d};
     for k=1:length(Data.CountNoSpon{c}{d})
@@ -230,17 +240,25 @@ end
 xlabel('CPD'); ylabel(['Spike Count [',num2str((CountWindow(2)-CountWindow(1))*10),'ms]'])
 end
 end
+%% Calc % Over Spon
+% Second Variable in {} should be the relevant cluster
+Data.spon_per = max(Data.SpikeCount{1}{Data.Clusters})/mean(Data.Spon{1}{Data.Clusters})*100;
 %% Save the Plots
 % Change "SavePath" to the desiered folder
 [a,b] = regexp(pathname,'Data\\\S{10,10}');
 date = pathname(a+5:b);
-[a,b] = regexp(fname,'Loc\d*'); Loc = fname(a:b);
+[a,b] = regexp(fname,'Loc\d*'); Loc = fathname(a:b);
 SavePath = ('C:\Users\....\Figures\');
 save([SavePath,'SpatialFrequencyPlot_',date,Loc,'.fig'],"FigCPDCurve");
 %% Save the Data Variable
 % Change "SavePath" to the desiered folder
-SavePath ='C:\Users\.....\Data\';
-stimfreq = num2str(round(1/mean(diff(stimulus_times)))); 
-[a,b] = regexp(fname,'_\d*ms'); Data.StimDur = fname(a+1:b-2); 
-[a,b] = regexp(pathname,'Data\\\S{10,10}'); date = pathname(a+5:b);
-save([SavePath,'SpatialFrequency_',Data.StimDur,'ms',stimfreq,'Hz',date,'.mat'],"Data");
+SavePath ='/Users/shirahasky/Desktop/practicum/Data/';
+% stimfreq = num2str(round(1/mean(diff(stimulus_times)))); 
+% [a,b] = regexp(fname,'_\d*ms'); Data.StimDur = fname(a+1:b-2); 
+
+[a,b] = regexp(pathname,'/[1234567890.]*/'); date = pathname(a+1:b-1);
+[a,b] = regexp(pathname,'/[1234567890Loc]*/'); Location = pathname(a+1:b-1);
+Ans = mat2str(CPDs);
+Ans = strrep(Ans,' ','_');
+Data.CPDs = Ans(2:end-1);
+save([SavePath,'SpatialFrequency_',Ans(2:end-1),'CPD',date,Location,'Channel',num2str(AC),'.mat'],"Data");

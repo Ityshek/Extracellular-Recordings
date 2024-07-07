@@ -1,9 +1,10 @@
 function [Rast_sort,ind_rast_sort]=build_rast_sort2(idx,stimulus_indexes,sampling_freq,ind_rast_re2,dim,Stim_times)
 % [Amplitude, Width,Spikes]=Sort_spikes(raw_data,sampling_freq);
 % [width1,width2,width3,idx,Spikes1,Spikes2,Spikes3]=cluster_data(Amplitudes, Width,Spikes);
-ISI=round(mean(diff(Stim_times(2:end))),1);
+%ISI=round(mean(diff(Stim_times(2:end))),1);
+ISI = mode(diff(Stim_times(2:end)));
 for i=1:dim
-    Rast_sort{i}=sparse(length(ind_rast_re2),int32(ISI*sampling_freq));
+    Rast_sort{i}=sparse(length(Stim_times),int32(ISI*sampling_freq));
 end
 
 % for i=1:length(ind_rast_re2)    
@@ -24,8 +25,10 @@ end
 
 for k=1:dim
     for i=1:length(idx_2)
-        Rast_sort{k}(i,ind_rast_re2{i}(idx_2{i}==k))=1;
+       a = intersect([ind_rast_re2{i}(idx_2{i}==k)],ind_rast_re2{i}(ind_rast_re2{i}<sampling_freq*ISI));
+       Rast_sort{k}(i,a)=1;
         ind_rast_sort{k}{i} = ind_rast_re2{i}(idx_2{i}==k);
+        
 
     
     end

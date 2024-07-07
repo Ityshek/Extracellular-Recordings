@@ -29,7 +29,7 @@ end
 % Response Calculation
 for i=1:length(Data.Clusters)
     ResponseWindow = [(window(1)/10)+2:(window(2)/10)+2]; % Define time window for Prosthetic response (10-210ms post trigger). add 2 bins for -10 and 0 bins in PSTH.
-    Data.NaturalIntensityResponse{i} = [Data.NaturalIntensityResponse{i};round(sum(Data.Psth_sort{Data.Clusters(i)}(ResponseWindow)),2)];
+    Data.NaturalIntensityResponse{i} = [Data.NaturalIntensityResponse{i};round(sum(PSTH(ResponseWindow)),2)];
     Data.NaturalIntensityCount{i} = [Data.NaturalIntensityCount{i};Data.SpikeCount{i}];
 end
 

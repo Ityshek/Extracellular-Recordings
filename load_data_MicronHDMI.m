@@ -1,9 +1,10 @@
-function [raw_data,sampling_freq,stim_Data,stim_sampling_rate,Begin_record,stimulus_times,stimulus_indexes,CPDs,pathname] =load_data_ConcateMultiUnit(ActiveChannels)
+function [raw_data, sampling_freq,stim_Data_seg,stim_sampling_rate,Begin_record,channelflag,stimulus_times, stimulus_indexes,answer,fname,pathname,SignalFiles,Dir]= load_data_MicronHDMI(c,answer,NumReps,flag,pathname,SignalFiles,Dir)
+if isempty(flag)
 Dir=uigetdir('*.mat','Select a Folder to Load Raw Data From');
 SignalFiles=dir(fullfile(Dir, '*.mat'));
 pathname = Dir;
+end
 count = 1;
-for c=ActiveChannels(count):ActiveChannels(end) 
     name=num2str(c);
     for i=1:length(SignalFiles)
         fname{i} = SignalFiles(i).name;
@@ -31,36 +32,35 @@ for c=ActiveChannels(count):ActiveChannels(end)
                 var_TimeEnd=['CSPK_0',name,'_TimeEnd'];
             end
             if isfield(data{i},var_CSPK)
-                channelflag(c) =0;
-                raw_data_seg{c}{i}=double(getfield(data{i},var_CSPK))*1.9;% convert to microvolts
-                Begin_record_seg{c}{i}=getfield(data{i},var_TimeBegin);
-                End_record{c}{i}=getfield(data{i},var_TimeEnd);
-                sampling_freq=data{i}.CSPK_001_KHz*1000;
-                stim_Data_seg{c}{i}=data{i}.CInPort_001;
+                channelflag =0;
+                raw_data_seg{i}=double(getfield(data{i},var_CSPK))*1.9;% convert to microvolts
+                Begin_record_seg{i}=getfield(data{i},var_TimeBegin);
+                End_record{i}=getfield(data{i},var_TimeEnd);
+                sampling_freq=getfield(data{i},[var_CSPK,'_KHz'])*1000;
+                stim_Data_seg{i}=data{i}.CInPort_001;
                 stim_sampling_rate=data{i}.CInPort_001_KHz*1000;
             else
-                raw_data{c} = [];
-                channelflag(c) =1;
+                raw_data = [];
+                channelflag =1;
             end
 
         end
-        raw_data{c} = []; stim_Data{c} = [];
-        if ~isempty(raw_data_seg{c})
+        raw_data = []; stim_Data = [];
+        if ~isempty(raw_data_seg)
             for i=1:length(SignalFiles)
-                raw_data{c} =[raw_data{c},raw_data_seg{c}{i}];
-                raw_data_length(i) = length(raw_data_seg{c}{i});
+                raw_data =[raw_data,raw_data_seg{i}];
+                raw_data_length(i) = length(raw_data_seg{i});
             end
-            stimulus_times{c} = stim_Data_seg{c}{1}(1,1:2:end)/stim_sampling_rate -Begin_record_seg{c}{1};
-            %stimulus_indexes{c} = round((stimulus_times{c})*sampling_freq);
+            stimulus_times = stim_Data_seg{1}(1,1:2:end)/stim_sampling_rate -Begin_record_seg{1};
+            %stimulus_indexes = round((stimulus_times)*sampling_freq);
 
             for i=2:length(SignalFiles)
-                %b = stim_Data_seg{c}{i}(1,1:2:end)/stim_sampling_rate +stimulus_times{c}(end) - Begin_record_seg{c}{i};
-                b = (stim_Data_seg{c}{i}(1,1:2:end)/stim_sampling_rate) +(sum(raw_data_length(1:i-1))/sampling_freq) - Begin_record_seg{c}{i};       
-                stimulus_times{c} = [stimulus_times{c},b];
+                %b = stim_Data_seg{i}(1,1:2:end)/stim_sampling_rate +stimulus_times(end) - Begin_record_seg{i};
+                b = (stim_Data_seg{i}(1,1:2:end)/stim_sampling_rate) +(sum(raw_data_length(1:i-1))/sampling_freq) - Begin_record_seg{i};       
+                stimulus_times = [stimulus_times,b];
             end
-            stimulus_indexes{c}=round((stimulus_times{c})*sampling_freq);
-            Begin_record{c} = Begin_record_seg{c}{1};
+            stimulus_indexes=round((stimulus_times)*sampling_freq);
+            Begin_record = Begin_record_seg{1};
         end
 count = count +1;    
-end
 end

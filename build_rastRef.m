@@ -1,10 +1,13 @@
-function [Rast,Spike,Av_spike,events_ind,ind_rast,spike_stim,spike_Times]=build_rastRef(stimulus_indexes,Stim_times,raw_data,sampling_freq,thresh,outlier,VisFlag)
+function [Rast,Spike,Av_spike,events_ind,ind_rast,spike_stim,spike_Times]=build_rastRef(stimulus_indexes,Stim_times,raw_data,sampling_freq,thresh,outlier,VisFlag,Check,PreStimTime)
 
 if VisFlag{1} == 2
 Stim_freq = 2;
 %ISI = 0.5;
 ISI=round(median(diff(Stim_times(2:end))),2);
 Rast=sparse(round((length(stimulus_indexes)/50)/ceil(Stim_freq)),round(ISI*sampling_freq)); % 
+elseif VisFlag{1} == 3
+  ISI = 1.9;
+  Rast=sparse(round(length(stimulus_indexes)),round(ISI*sampling_freq));
 else
 Stim_freq=round((1/mode(diff(Stim_times))),2);
 %Stim_freq = 1; % for 1Hz 10 frame trigger
@@ -19,18 +22,18 @@ count_stim=1;
 
 
 
-Events_ind=find(circshift(raw_data,[0 1])>thresh&raw_data<thresh); % indecies for spike times, detected by thresh.
+events_ind=find(circshift(raw_data,[0 1])>thresh&raw_data<thresh); % indecies for spike times, detected by thresh.
 
 % remove events inside refractory period
-RefractoryPeriod = 0; % insert in index values 
-events_ind = [];
-for i=2:length(Events_ind)
-    if Events_ind(i)+(2.5*10^-3)*sampling_freq<=length(raw_data) & Events_ind(i)-(2.5*10^-3)*sampling_freq>0 
-    if Events_ind(i) - Events_ind(i-1) > RefractoryPeriod 
-        events_ind = [events_ind,Events_ind(i)];
-    end
-end
-end
+RefractoryPeriod = 44; % insert in index values 
+% events_ind = [];
+% for i=2:length(Events_ind)
+%     if Events_ind(i)+(2.5*10^-3)*sampling_freq<=length(raw_data) & Events_ind(i)-(2.5*10^-3)*sampling_freq>0 
+%     if Events_ind(i) - Events_ind(i-1) > RefractoryPeriod 
+%         events_ind = [events_ind,Events_ind(i)];
+%     end
+% end
+% end
 
 for i=1:length(events_ind)
     if events_ind(i)-2.5*10^-3*sampling_freq>0&events_ind(i)+2.5*10^-3*sampling_freq<length(raw_data) %&circshift(raw_data(events_ind(i)),[0 -1])>-200
@@ -51,12 +54,11 @@ else
 end
     for k=1:rastind:length(stimulus_indexes)
     counter_events=1;
+    %events_ind = round(Check*sampling_freq);
     for i=1:length(events_ind) %loop over all events(spikes found)
-
-
-
-        if events_ind(i)>(stimulus_indexes(k)-(10*10^-3)*sampling_freq) && events_ind(i)<stimulus_indexes(k)+(ISI-10^-3)*sampling_freq
-                ind_rast{count_stim}(counter_events)=events_ind(i)-(stimulus_indexes(k)-(10*10^-3)*sampling_freq);
+        if events_ind(i)>stimulus_indexes(k)-((PreStimTime*10^-3)*sampling_freq) && events_ind(i)<stimulus_indexes(k)+(ISI-PreStimTime*10^-3)*sampling_freq             
+                ind_rast{count_stim}(counter_events)= events_ind(i)-(stimulus_indexes(k))+((PreStimTime*10^-3)*sampling_freq);
+                %ind_rast{count_stim}(counter_events)=events_ind(i)-(stimulus_indexes(k));
                 spike_stim{count_stim}(:,counter_events)=raw_data(events_ind(i)-2.5*10^-3*sampling_freq:events_ind(i)+2.5*10^-3*sampling_freq); %contains 5 msec around neg peak of each spike.
                 counter_events=counter_events+1;
         end

@@ -1,7 +1,4 @@
-function [Psth,binsize_sec,smoothed_y,SpikeCount,Label]=Build_psth3(Rast,fs,CountWindow)
-prompt = {'Choose Spike Calc: (1 = Hz | 2 = Count)','Choose Window Size [ms]:'};
-definpt = {'2','10'}; dlgtitle = 'Input'; dims = [1 35];
-Flag = inputdlg(prompt,dlgtitle,dims,definpt);
+function [Psth,binsize_sec,smoothed_y,Label]=Build_psth3(Rast,fs,CountWindow,Flag)
 if Flag{1} == '1'
 % Calc PSTH in Hz
 count1=1;
@@ -16,10 +13,11 @@ for k=1:binsize:size(Rast,2)
     end
 end
 Psth = circshift(Psth,1);
-winsize = 5; % window size.
+winsize = 4; % window size.
 win = ones(winsize,1);
 smoothed_y = conv(Psth,win,'same')/winsize;
-Label = 'Firing Rate [Hz]';
+%smoothed_y = conv(Psth,win,'same');
+Label = 'Firing Rate [Spikes/sec]';
 elseif Flag{1} == '2'
 % Calac PSTH in num of spikes in bin
 count1=1;
@@ -35,11 +33,12 @@ for k=1:binsize:size(Rast,2)
 end
 
 Psth = circshift(Psth,1);
-winsize = 5; % window size.
+winsize = 4; % window size.
 win = ones(winsize,1);
 smoothed_y = conv(Psth,win,'same')/winsize;
+%smoothed_y = conv(Psth,win,'same');
 Label = ['Spike Count [',num2str(Flag{2}),'ms]'];
 end
 % Calculate number of spikes per 200ms between 10-210ms post stimulus
-temp2 = full(Rast(:,CountWindow(1)*fs*0.01:CountWindow(2)*fs*0.01));
-SpikeCount = sum(sum(temp2))/size(temp2,1);
+% temp2 = full(Rast(:,CountWindow(1)*fs*0.01:CountWindow(2)*fs*0.01));
+% SpikeCount = sum(sum(temp2))/size(temp2,1);

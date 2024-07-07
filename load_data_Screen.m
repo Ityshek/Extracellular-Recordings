@@ -1,4 +1,4 @@
-function [raw_data, sampling_freq,stim_Data,stim_sampling_rate,Begin_record,channelflag] =load_data_MultiUnit(c,fname,pathname)
+function [raw_data, sampling_freq,stim_Data,stim_sampling_rate,Begin_record,channelflag] =load_data_Screen(c,fname,pathname)
 
 name=num2str(c);
 data=load([pathname fname]);

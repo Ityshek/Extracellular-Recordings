@@ -7,8 +7,9 @@ definput = {'0','0'};
 answer = inputdlg(prompt,dlgtitle,dims,definput);
 
 if answer{1} == '1'
-    Data.ProstheticIntensity = []; Data.ProstheticIntensityResponse = cell(1,length(Data.Clusters)); Data.ProstheticIntensityCount = cell(1,length(Data.Clusters));   Data.ProstheticLatency = cell(1,length(Data.Clusters));
-    Data.StimThresh = cell(1,length(Data.Clusters));
+    Data.Intensity = []; Data.Response = cell(1,length(Data.Clusters)); 
+    Data.Latency = cell(1,length(Data.Clusters));
+    % Data.ProstheticIntensityCount = cell(1,length(Data.Clusters)); Data.StimThresh = cell(1,length(Data.Clusters));
 end
 
 % Calculation
@@ -22,16 +23,18 @@ D = [0.8,0.95,1.25,1.6,2.1,2.7,3.9,4.9;...
 %Data.ProstheticIntensity = [Data.ProstheticIntensity;D(find(D == str2num(Amp))+1)]; %Convert to Intensity/mm^2 for 40% duty cycle.
 % Data.ProstheticIntensity = [Data.ProstheticIntensity;B(find(B == str2num(Amp))+1)]; %Convert to Intensity/mm^2 for 40% duty cycle.
 [a,b] = regexp(fname,'_[.0123456789]*Int');
-Data.ProstheticIntensity = [Data.ProstheticIntensity;str2num(fname(a+1:b-3))]; % Stimulus Intensity in mW/mm^2.
+Data.Intensity = [Data.Intensity;str2num(fname(a+1:b-3))]; % Stimulus Intensity in mW/mm^2.
 
 
 % Response Calculation
+if Data.IsActive{end} == 1 % check for responsivness in current trial
 for i=1:length(Data.Clusters)
-    ResponseWindow = [(window(1)/10)+2:(window(2)/10)+2]; % Define time window for Prosthetic response (10-210ms post trigger). add 2 bins for -10 and 0 bins in PSTH.
-    Data.ProstheticIntensityResponse{i} = [Data.ProstheticIntensityResponse{i};round(max(PSTH(ResponseWindow)),2)];
-    Data.ProstheticIntensityCount{i} = [Data.ProstheticIntensityCount{i};Data.SpikeCount{i}];
+    %ResponseWindow = [(window(1)/10)+2:(window(2)/10)+2]; % Define time window for Prosthetic response (10-210ms post trigger). add 2 bins for -10 and 0 bins in PSTH.
+    ResponseWindow = [2,ceil(window/PSTHbinsize)];
+    Data.Response{i} = [Data.Response{i};round(max(PSTH(ResponseWindow)),2)];
+    % Data.ProstheticIntensityCount{i} = [Data.ProstheticIntensityCount{i};Data.SpikeCount{i}];
 end
-
+end
 %% Stimulation Threshold
 for i=1:length(Data.Clusters)
     %[RS,RM] = std(Data.Psth_sort{Data.Clusters(i)},'omitnan'); % Calc std and mean of total acticvity
@@ -42,7 +45,6 @@ for i=1:length(Data.Clusters)
     if length(find(PSTH(window(1)/10:window(2)/10)>RM+1.5*RS)) > 3 % Check for at least 3 bins in PSTH higher then 95% of baseline activity inside response window.
         % if R > RM+2*RS % Look if R window is bigger then 95% of total activity
         Data.StimThresh{i} = [Data.StimThresh{i};1];
-
         % Calc Latency (Only if responsive)
         %         Latency = (find(PSTH((window(1)/10)+2:(window(2)/10)+2)...
         %             == max(PSTH((window(1)/10)+2:(window(2)/10)+2)),1))*PSTHbinsize;
@@ -67,9 +69,9 @@ if answer{2} =='1'
 
         %         spon = ones(1,length(Data.ProstheticIntensityResponse{i}))*(mean(Data.Spon{i})+(3*std(Data.Spon{i})));
         %         plot([Data.ProstheticIntensity],[Data.ProstheticIntensityResponse{i}],'-',Data.ProstheticIntensity,spon,'--')
-        semilogx([Data.ProstheticIntensity],[Data.ProstheticIntensityCount{i}],'b',...
-            [Data.ProstheticIntensity],ones(1,length(Data.ProstheticIntensityCount{i}))*mean(Data.Spon{i}),'r')
-        xticks(linspace(0,round(max(Data.ProstheticIntensity),1),5))
+        semilogx([Data.Intensity],[Data.ProstheticIntensityCount{i}],'b',...
+            [Data.Intensity],ones(1,length(Data.ProstheticIntensityCount{i}))*mean(Data.Spon{i}),'r')
+        xticks(linspace(0,round(max(Data.Intensity),1),5))
         ylabel('Spike Count [200ms]','FontSize',20)
         xlabel('Intensity Log [mW/mm^2]','FontSize',20)
         legend('Response','Spontaneous Activity');
@@ -78,8 +80,8 @@ if answer{2} =='1'
         %   Latency
         if length(find(~isnan(Data.ProstheticLatency{i}))) > 1
         Data.LatencyCurve{i} = figure();
-        plot(Data.ProstheticIntensity,Data.ProstheticLatency{i})
-        xticks(linspace(0,round(max(Data.ProstheticIntensity),1),5))
+        plot(Data.Intensity,Data.ProstheticLatency{i})
+        xticks(linspace(0,round(max(Data.Intensity),1),5))
         ylabel('Latency [ms]','FontSize',20)
         xlabel('Intensity [mW/mm^2]','FontSize',20)
         legend('Latency of Response');
