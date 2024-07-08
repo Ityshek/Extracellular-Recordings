@@ -514,7 +514,8 @@ SponWindow = (window(2)-window(1))*0.01;
 Data.Spon{end+1} = Spon; Data.SponStd{end+1} = SponStd;
 
 %% Calc Activation Threshold
-RelevantWindow = [round(0.02/binsize_sec)+1 round((0.02+WindowSize/1000)/binsize_sec+1,0)]; % Create a window to look for response in PSTH Bins
+RelevantWindow = [(PreStimTime/(binsize_sec*1000))+1 ...
+    ((PreStimTime/(binsize_sec*1000))+1)+(WindowSize/(binsize_sec*1000))]; % Create a window to look for response in PSTH Bins
 % Data.IsActive{end+1} = zeros(1,length(Data.Rast_sort{end}));
 % Data.ResponseWidth{end+1} = zeros(1,length(Data.Rast_sort{end}));
 Data.IsActive{end+1} = []; Data.ResponseWidth{end+1} = [];
