@@ -90,16 +90,16 @@ elseif StimType == '2'
         stim_sampling_rate=data.CAI_002_KHz*1000;
         t_stim=(0:length(StimChannel)-1)/stim_sampling_rate;
     
-    for s = min(StimChannel)+10: max(StimChannel)-10
+    for s = double(min(StimChannel)+10):0.1:double(max(StimChannel)-1)
         stim_thresh = s;
         stimulus_times=(find(circshift(StimChannel,[0 -1])>stim_thresh&StimChannel<stim_thresh))/stim_sampling_rate;
-        stimulus_times = stimulus_times(1:NumFrames:end); A = round(diff(stimulus_times),1);
+        stimulus_times = stimulus_times(1:NumFrames:end); A = round(diff(stimulus_times),2);
         if sum(~ismember(A,1)) == 0 && ~isempty(A) % Check for all 
             break
         end
     end
         stimulus_times=(find(circshift(StimChannel,[0 -1])<stim_thresh&StimChannel>stim_thresh))/stim_sampling_rate;
-        stimulus_times = stimulus_times(1:NumFrames:end);
+        stimulus_times = stimulus_times(1:NumFrames:end-1);
         % stimulus_times = stimulus_times(1+NumFrames:NumFrames:41*NumFrames); 
         stimulus_indexes=round(stimulus_times*sampling_freq);
     elseif Type == '2' % Check for CFF condition
