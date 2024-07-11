@@ -30,58 +30,53 @@ if StimType == '1'
         stim_thresh = 1000;
         NumFrames = 2;
     elseif Type == '2' % Check for CFF condition
-        %         for i=1:length(StimChannel)
-        %             if StimChannel(i) <10 && StimChannel(i) > -10
-        %                 StimChannel(i) = NaN;
-        %             end
-        %             if StimChannel(i) ~= 0
-        %                 StimChannel(i) = StimChannel(i)-max(StimChannel);
-        %             end
-        %         end
         [a,b] = regexp(fname,'_[0123456789]*Hz');
         NumFrames = str2num(fname(a+1:b-2));
         [a,b] = regexp(fname,'_[0123456789]*Reps');
         Reps = str2num(fname(a+1:b-4));
-        %         for s=3:abs(min(StimChannel))
-        %             NumTrigs = NumFrames*Reps; % Multiply by repetitions
-        %             stim_thresh = -s;
-        %             if length((find(circshift(StimChannel,[0 -1])>stim_thresh&StimChannel<stim_thresh))/stim_sampling_rate) == NumTrigs
-        %                 break
-        %             end
-        %         end
+        for s = double(min(StimChannel)+10):0.1:double(max(StimChannel)-1)
+            stim_thresh = s;
+            stimulus_times=(find(circshift(StimChannel,[0 -1])>stim_thresh&StimChannel<stim_thresh))/stim_sampling_rate;
+            stimulus_times = stimulus_times(1:NumFrames:end); A = round(diff(stimulus_times),2);
+            if sum(~ismember(A,2)) == 0 && ~isempty(A) % Check for all
+                break
+            end
+        end
+        stimulus_times=(find(circshift(StimChannel,[0 -1])<stim_thresh&StimChannel>stim_thresh))/stim_sampling_rate;
+        stimulus_times = stimulus_times(1:NumFrames:end-1);         stimulus_indexes=round(stimulus_times*sampling_freq);
     else
         stim_thresh = min(StimChannel)+50;
         NumFrames = 1;
         %stim_thresh = 5;
+        stimulus_times=(find(circshift(StimChannel,[0 -1])>stim_thresh&StimChannel<stim_thresh))/stim_sampling_rate;
+    stimulus_times = stimulus_times(1:NumFrames:end);         stimulus_indexes=round(stimulus_times*sampling_freq);
+    %else
+    %stimulus_times = stimulus_times(1:NumFrames:end);
+    %end
+    stimulus_indexes=round(stimulus_times*sampling_freq);
     end
     [startIndex,endIndex] = regexp(fname,'_\d*Hz');
     StimFreq = str2num(fname(startIndex+1:endIndex-2));
     [startIndex,endIndex] = regexp(fname,'_\d*ms');
     %     if StimFreq == 64
-%     for s = min(StimChannel)+10: max(StimChannel)-10
-%         stim_thresh = s;
-%         stimulus_times=(find(circshift(StimChannel,[0 -1])>stim_thresh&StimChannel<stim_thresh))/stim_sampling_rate;
-%         if length(stimulus_times) == StimFreq*NumReps
-%             break
-%         end
-%     end
+    %     for s = min(StimChannel)+10: max(StimChannel)-10
+    %         stim_thresh = s;
+    %         stimulus_times=(find(circshift(StimChannel,[0 -1])>stim_thresh&StimChannel<stim_thresh))/stim_sampling_rate;
+    %         if length(stimulus_times) == StimFreq*NumReps
+    %             break
+    %         end
+    %     end
     %     else
     %         stim_thresh = min(StimChannel)+100;
     %         stimulus_times=(find(circshift(StimChannel,[0 -1])>stim_thresh&StimChannel<stim_thresh))/stim_sampling_rate;
     %     end
     %stimulus_times = stimulus_times(1:round(length(stimulus_times)/NumFrames,0))
     %if Type == '1'
-    stimulus_times=(find(circshift(StimChannel,[0 -1])>stim_thresh&StimChannel<stim_thresh))/stim_sampling_rate;
-    stimulus_times = stimulus_times(1:NumFrames:end);
-    %else
-    %stimulus_times = stimulus_times(1:NumFrames:end);
-    %end
-    stimulus_indexes=round(stimulus_times*sampling_freq);
     %stim=zeros(length(t_stim),1);
     %stim(round(stimulus_times*stim_sampling_rate))=  stim_thresh;
     %% Check for VIS condition
 elseif StimType == '2'
-        StimChannel = data.CAI_002;
+    StimChannel = data.CAI_002;
     %     StimChannel = StimChannel - min(StimChannel);
     stim_thresh=30;
     if Type == '-' % Check for Null / Intensity Condition
@@ -89,87 +84,87 @@ elseif StimType == '2'
         sampling_freq=getfield(data,[var_str,'_KHz'])*1000;
         stim_sampling_rate=data.CAI_002_KHz*1000;
         t_stim=(0:length(StimChannel)-1)/stim_sampling_rate;
-    
-    for s = double(min(StimChannel)+10):0.1:double(max(StimChannel)-1)
-        stim_thresh = s;
-        stimulus_times=(find(circshift(StimChannel,[0 -1])>stim_thresh&StimChannel<stim_thresh))/stim_sampling_rate;
-        stimulus_times = stimulus_times(1:NumFrames:end); A = round(diff(stimulus_times),2);
-        if sum(~ismember(A,1)) == 0 && ~isempty(A) % Check for all 
-            break
+
+        for s = double(min(StimChannel)+10):0.1:double(max(StimChannel)-1)
+            stim_thresh = s;
+            stimulus_times=(find(circshift(StimChannel,[0 -1])>stim_thresh&StimChannel<stim_thresh))/stim_sampling_rate;
+            stimulus_times = stimulus_times(1:NumFrames:end); A = round(diff(stimulus_times),2);
+            if sum(~ismember(A,1)) == 0 && ~isempty(A) % Check for all
+                break
+            end
         end
-    end
         stimulus_times=(find(circshift(StimChannel,[0 -1])<stim_thresh&StimChannel>stim_thresh))/stim_sampling_rate;
         stimulus_times = stimulus_times(1:NumFrames:end-1);
-        % stimulus_times = stimulus_times(1+NumFrames:NumFrames:41*NumFrames); 
+        % stimulus_times = stimulus_times(1+NumFrames:NumFrames:41*NumFrames);
         stimulus_indexes=round(stimulus_times*sampling_freq);
     elseif Type == '2' % Check for CFF condition
-%         [a,b] = regexp(fname,'_[0123456789]*Hz');
-%         NumFrames = str2num(fname(a+1:b-2))*2;
-%         sampling_freq=data.CSPK_017_KHz*1000;
-%         stim_sampling_rate=data.CAI_002_KHz*1000;
-% 
-%         if NumFrames == 128
-%             val = max(StimChannel); StimChannel = abs(StimChannel-val);
-%             val2 = max(StimChannel);
-%             for i=1:length(StimChannel)
-%                 if  StimChannel(i) > val2 - 5
-%                     stimchannel(i) = 0;
-%                 else
-%                     stimchannel(i) = 40;
-%                 end
-%             end
-%             stim_thresh=20;
-%             stimulus_time=(find(circshift(stimchannel,[0 1])<stim_thresh&stimchannel>stim_thresh))/stim_sampling_rate;
-%             stimulus_times = linspace(stimulus_time,stimulus_time+((NumReps-1)*2),NumReps);
-%             stimulus_indexes=round(stimulus_times*sampling_freq);
-% 
-%         else
-%             %         [startIndex,endIndex] = regexp(fname,'_\d*Hz');
-%             %         StimFreq = str2num(fname(startIndex+1:endIndex-2));
-%             t_stim=(0:length(StimChannel)-1)/stim_sampling_rate;
-%             for s = min(StimChannel)+10: max(StimChannel)-10
-%                 stim_thresh = s;
-%                 stimulus_times=(find(circshift(StimChannel,[0 -1])>stim_thresh&StimChannel<stim_thresh))/stim_sampling_rate;
-%                 A = max(diff(stimulus_times(1:NumFrames:end))); B = min(diff(stimulus_times(1:NumFrames:end)));
-%                 if A < 2.01 && B > 1.99
-%                     break
-%                 end
-%             end
-%             %stim_thresh = 1000;
-%             stimulus_times=(find(circshift(StimChannel,[0 -1])<stim_thresh&StimChannel>stim_thresh))/stim_sampling_rate;
-%             stimulus_times= stimulus_times(1:NumFrames:end);
-%             %                 if NumFrames == 128
-%             %                     stimulus_times = stimulus_times(1:NumFrames-3:end);
-%             %                 else
-%             %                     EndPoint = round(length(stimulus_times)/NumFrames)*NumFrames;
-%             %                     stimulus_times = stimulus_times(1:NumFrames:EndPoint);
-%             %                 end
-%             stimulus_indexes=round(stimulus_times*sampling_freq);
-%             stim=zeros(length(t_stim),1);
-%             stim(round(stimulus_times*stim_sampling_rate))=  stim_thresh;
-%         end
-        
+        %         [a,b] = regexp(fname,'_[0123456789]*Hz');
+        %         NumFrames = str2num(fname(a+1:b-2))*2;
+        %         sampling_freq=data.CSPK_017_KHz*1000;
+        %         stim_sampling_rate=data.CAI_002_KHz*1000;
+        %
+        %         if NumFrames == 128
+        %             val = max(StimChannel); StimChannel = abs(StimChannel-val);
+        %             val2 = max(StimChannel);
+        %             for i=1:length(StimChannel)
+        %                 if  StimChannel(i) > val2 - 5
+        %                     stimchannel(i) = 0;
+        %                 else
+        %                     stimchannel(i) = 40;
+        %                 end
+        %             end
+        %             stim_thresh=20;
+        %             stimulus_time=(find(circshift(stimchannel,[0 1])<stim_thresh&stimchannel>stim_thresh))/stim_sampling_rate;
+        %             stimulus_times = linspace(stimulus_time,stimulus_time+((NumReps-1)*2),NumReps);
+        %             stimulus_indexes=round(stimulus_times*sampling_freq);
+        %
+        %         else
+        %             %         [startIndex,endIndex] = regexp(fname,'_\d*Hz');
+        %             %         StimFreq = str2num(fname(startIndex+1:endIndex-2));
+        %             t_stim=(0:length(StimChannel)-1)/stim_sampling_rate;
+        %             for s = min(StimChannel)+10: max(StimChannel)-10
+        %                 stim_thresh = s;
+        %                 stimulus_times=(find(circshift(StimChannel,[0 -1])>stim_thresh&StimChannel<stim_thresh))/stim_sampling_rate;
+        %                 A = max(diff(stimulus_times(1:NumFrames:end))); B = min(diff(stimulus_times(1:NumFrames:end)));
+        %                 if A < 2.01 && B > 1.99
+        %                     break
+        %                 end
+        %             end
+        %             %stim_thresh = 1000;
+        %             stimulus_times=(find(circshift(StimChannel,[0 -1])<stim_thresh&StimChannel>stim_thresh))/stim_sampling_rate;
+        %             stimulus_times= stimulus_times(1:NumFrames:end);
+        %             %                 if NumFrames == 128
+        %             %                     stimulus_times = stimulus_times(1:NumFrames-3:end);
+        %             %                 else
+        %             %                     EndPoint = round(length(stimulus_times)/NumFrames)*NumFrames;
+        %             %                     stimulus_times = stimulus_times(1:NumFrames:EndPoint);
+        %             %                 end
+        %             stimulus_indexes=round(stimulus_times*sampling_freq);
+        %             stim=zeros(length(t_stim),1);
+        %             stim(round(stimulus_times*stim_sampling_rate))=  stim_thresh;
+        %         end
+
         sampling_freq=data.CSPK_017_KHz*1000;
         stim_sampling_rate=data.CAI_002_KHz*1000;
         [a,b] = regexp(fname,'_[0123456789]*Hz');
         NumFrames = str2num(fname(a+1:b-2));
         [a,b] = regexp(fname,'_[0123456789]*Reps');
         Reps = str2num(fname(a+1:b-4));
-            [startIndex,endIndex] = regexp(fname,'_\d*Hz');
-    StimFreq = str2num(fname(startIndex+1:endIndex-2));
-    [startIndex,endIndex] = regexp(fname,'_\d*ms');
-    %     if StimFreq == 64
-    for s = min(StimChannel)+10: max(StimChannel)-10
-        stim_thresh = s;
-        stimulus_times=(find(circshift(StimChannel,[0 -1])>stim_thresh&StimChannel<stim_thresh))/stim_sampling_rate;
-        stimulus_times = stimulus_times(1:NumFrames*2:end); A = round(diff(stimulus_times),1);
-        if sum(~ismember(A,2)) == 0 % Check for all 
-            break
+        [startIndex,endIndex] = regexp(fname,'_\d*Hz');
+        StimFreq = str2num(fname(startIndex+1:endIndex-2));
+        [startIndex,endIndex] = regexp(fname,'_\d*ms');
+        %     if StimFreq == 64
+        for s = min(StimChannel)+10: max(StimChannel)-10
+            stim_thresh = s;
+            stimulus_times=(find(circshift(StimChannel,[0 -1])>stim_thresh&StimChannel<stim_thresh))/stim_sampling_rate;
+            stimulus_times = stimulus_times(1:NumFrames*2:end); A = round(diff(stimulus_times),1);
+            if sum(~ismember(A,2)) == 0 % Check for all
+                break
+            end
         end
-    end
-    stimulus_times=(find(circshift(StimChannel,[0 -1])>stim_thresh&StimChannel<stim_thresh))/stim_sampling_rate;
-    stimulus_times = stimulus_times(1:NumFrames*2:end);
-    stimulus_indexes=round(stimulus_times*sampling_freq);
+        stimulus_times=(find(circshift(StimChannel,[0 -1])>stim_thresh&StimChannel<stim_thresh))/stim_sampling_rate;
+        stimulus_times = stimulus_times(1:NumFrames*2:end);
+        stimulus_indexes=round(stimulus_times*sampling_freq);
     end
     %% Check for Micron HDMI condition
 elseif StimType == '3'

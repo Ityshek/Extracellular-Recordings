@@ -10,7 +10,7 @@ std_Factor=-4.5;
 prompt = {'Select Projection System (Screen = 1, Micron =2)', 'Number of Recorded Channels:','All Desired Channels:', 'N rows:','N Column:', 'N Reps:'};
 dlgtitle = 'Input';
 dims = [1 35];
-definput = {'2','1','22','1','1','50'};
+definput = {'2','1','25','1','1','50'};
 %definput = {'2',num2str(NumChannels),num2str(OpenChannels),'3','3','80'}
 answer = inputdlg(prompt,dlgtitle,dims,definput); NumReps = str2num(answer{6});
 FigPlotNum = str2double(answer{2}); count = str2double(answer{3}); nRows = str2num(answer{4}); nColumn = str2num(answer{5});
