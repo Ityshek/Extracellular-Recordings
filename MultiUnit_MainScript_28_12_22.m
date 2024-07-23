@@ -711,15 +711,15 @@ RateCalcWindow = binsize_sec*1000; % PSTH Bin Size in ms
 % Change "SavePath" to the desiered folder
 %SavePath ='C:\Users\Itay\Desktop\Yossi Mandel Lab\Extracellular Recordings\Results\Data\CFF\';
 %SavePath ='C:\Users\Itay\Desktop\Yossi Mandel Lab\Extracellular Recordings\Results\Data\MicronAlt\';
-SavePath ='C:\Users\Itay\Desktop\Yossi Mandel Lab\Extracellular Recordings\Proccesed - Data\';
+SavePath ='C:\Users\USER\OneDrive - Bar-Ilan University - Students\Documents\school\school\3 year\2 semester\Lab\code\After\';
 %SavePath = 'C:\Users\Itay\Desktop\Yossi Mandel Lab\Extracellular Recordings\Results\Data\MicronHDMICPD\';
 stimfreq = num2str(round(1/mean(diff(stimulus_times))));
 [a,b] = regexp(fname,'_\d*ms');
 if ~isempty(a)
     Data.StimDur = fname(a+1:b-2);
 end
-[a,b] = regexp(pathname,'Data\\\S{10,10}'); 
-date = pathname(a+5:b); date = datestr(datetime(strrep(date,'.','-')),'dd-mm-yyyy');
+[a,b] = regexp(pathname,'Flash\\\S{10,10}'); 
+date = pathname(a+6:b); date = datestr(datetime(strrep(date,'.','-')),'dd-mm-yyyy');
 [a,b] = regexp(fname,'Loc\d*');Data.Loc = fname(a+3:b);
 %Ch = cell2mat(inputdlg('Insert the Number of the Channel'));
 Ch = answer{3};
