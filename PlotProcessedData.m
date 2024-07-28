@@ -5,7 +5,7 @@ load([path,file]);
 close all;
 figure();
 if ~isnan(strfind(file,'Alt'))
-    binsize_sec = 0.01; sampling_freq = 44000;
+    binsize_sec = Data.PSTHBinSize; sampling_freq = 44000;
     t_pst=1000*linspace(-10*10^-3,size(Data.Psth_sort{1}{1},2)*binsize_sec-10*10^-3,length(Data.Psth_sort{1}{1}));
     xtickc = linspace(-440,max(t_pst)*44,3);
     names= round(((xtickc/44000)-10^-3),2)*10^3; names(2:end-1) = names(2:end-1) + 10;
@@ -87,11 +87,11 @@ if ~isnan(strfind(file,'Alt'))
     set(gca,'color','none','FontSize',15)
 
 else
-    binsize_sec = 0.01; sampling_freq = 44000;
-    t_pst=1000*linspace(-10*10^-3,size(Data.Psth_sort{1},2)*binsize_sec-10*10^-3,length(Data.Psth_sort{1}));
-    xtickc = linspace(-440,max(t_pst)*44,3);
-    names= round(((xtickc/44000)-10^-3),2)*10^3; names(2:end-1) = names(2:end-1) + 10;
-    t_Rast = linspace(-440,max(xtickc),size(Data.Rast_sort{1},2));
+    binsize_sec = Data.PSTHBinSize; sampling_freq = 44000;
+    t_pst=1000*linspace(0,size(Data.Psth_sort{1},2)*binsize_sec,length(Data.Psth_sort{1}));
+    xtickc = linspace(-8800,max(t_pst)*44,5);
+    names= round(((xtickc/44000)-200^-3),1)*10^3 - 200; %names(2:end-1) = names(2:end-1) + 10;
+    t_Rast = linspace(-8800,max(xtickc),size(Data.Rast_sort{1},2));
     NumTrails = length(Data.Rast_sort);
     for i=1:NumTrails
         flag=0;
@@ -100,11 +100,11 @@ else
         %subplot(1,NumTrails,i)
         yyaxis left
         spy(Data.Rast_sort{i},6,'K')
-        %ylabel('Repetition','FontSize',12)
+        ylabel('Repetition','FontSize',16)
         axis square
-        xlim([-440 22000]);
+        xlim([-8800 22000]);
         xlabel([])
-        xtickc=round(linspace(0,round(length(Data.Rast_sort{i})),5),0); names = round(xtickc/44)/1000;
+        xtickc=round(linspace(0,round(length(Data.Rast_sort{i})),5),0); names = (round(xtickc/44))-200;
         %    xtickc=round(linspace(-10*10^-3*sampling_freq,round(length(Data.Rast_sort{i})) ...
         %    -10*10^-3*sampling_freq,3),0);
         %   names= round(((xtickc/44)-10^-3),0); names(2:end) = names(2:end)+10;
@@ -114,17 +114,17 @@ else
         hold on
         %subplot(1,NumTrails,i)
         yyaxis right
-        plot(gca,t_pst*44,Data.Psth_sort{i}*100,'b-','LineWidth',1)
+        plot(gca,t_pst*44,Data.Psth_sort{i},'b-','LineWidth',1)
         hold on
         plot(gca,t_pst*44,ones(1,length(t_pst))*ActiveThresh(i),"Color",'r','LineStyle','-','LineWidth',1)
         % figure settings
         set(gca, 'XTick',  xtickc, 'XTickLabel', names,'FontSize',12,'XTickLabelRotation',0)
         set(gca,'YColor','r')
-        xlim([-440 max(xtickc)]);
+        xlim([0 max(xtickc)]);
         %xlim([-440 44000]);
-        ylim([0 100])
-        %xlabel('Time [sec]','FontSize',16)
-        %ylabel('Spikes/Sec','FontSize',16)
+        ylim([0 2])
+        xlabel('Time [ms]','FontSize',16)
+        ylabel('Spike Count [20ms]','FontSize',16)
         title(['Pulse Freq: ',num2str(Data.StimFreq(i)),'Hz'],'FontSize',16)
         %title(['Intensity: ',num2str(Data.ProstheticIntensity(i)),'mW/mm^2'],'FontSize',10)
         %title(['Intensity: ',num2str(Data.NaturalIntensity(i)),'nW/mm^2'],'FontSize',10)

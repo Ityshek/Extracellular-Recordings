@@ -1,4 +1,4 @@
-function [raw_data, sampling_freq,StimChannel,stim_sampling_rate,Begin_record,channelflag,stimulus_times, stimulus_indexes,answer]= load_data_Micron(c,fname,pathname,answer,NumReps)
+function [raw_data, sampling_freq,StimChannel,stim_sampling_rate,Begin_record,channelflag,stimulus_times, stimulus_indexes,answer]= load_data_Micron(c,fname,pathname,answer)
 
 StimType = answer{1}; DistortTrigger = answer{2};  Type = answer{3};
 name=num2str(c);
@@ -154,11 +154,11 @@ elseif StimType == '2'
         StimFreq = str2num(fname(startIndex+1:endIndex-2));
         [startIndex,endIndex] = regexp(fname,'_\d*ms');
         %     if StimFreq == 64
-        for s = min(StimChannel)+10: max(StimChannel)-10
+        for s = double(min(StimChannel)+2):0.01:double(max(StimChannel)-1)
             stim_thresh = s;
             stimulus_times=(find(circshift(StimChannel,[0 -1])>stim_thresh&StimChannel<stim_thresh))/stim_sampling_rate;
             stimulus_times = stimulus_times(1:NumFrames*2:end); A = round(diff(stimulus_times),1);
-            if sum(~ismember(A,2)) == 0 % Check for all
+            if sum(~ismember(A,2)) == 0 && length(A) >=10 % Check for all
                 break
             end
         end

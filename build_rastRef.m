@@ -56,10 +56,11 @@ end
     counter_events=1;
     %events_ind = round(Check*sampling_freq);
     for i=1:length(events_ind) %loop over all events(spikes found)
-        if events_ind(i)>stimulus_indexes(k)-((PreStimTime*10^-3)*sampling_freq) && events_ind(i)<stimulus_indexes(k)+(ISI-PreStimTime*10^-3)*sampling_freq             
+        if events_ind(i)>stimulus_indexes(k)-((PreStimTime*10^-3)*sampling_freq) && events_ind(i)<stimulus_indexes(k)+(ISI-PreStimTime*10^-3)*sampling_freq...
+                && events_ind(i) + 1.5*10^-3*sampling_freq*10 < length(raw_data) 
                 ind_rast{count_stim}(counter_events)= events_ind(i)-(stimulus_indexes(k))+((PreStimTime*10^-3)*sampling_freq);
                 %ind_rast{count_stim}(counter_events)=events_ind(i)-(stimulus_indexes(k));
-                spike_stim{count_stim}(:,counter_events)=raw_data(events_ind(i)-2.5*10^-3*sampling_freq:events_ind(i)+2.5*10^-3*sampling_freq); %contains 5 msec around neg peak of each spike.
+                spike_stim{count_stim}(:,counter_events)=raw_data(events_ind(i)-1.5*10^-3*sampling_freq:events_ind(i)+1.5*10^-3*sampling_freq); %contains 5 msec around neg peak of each spike.
                 counter_events=counter_events+1;
         end
     end

@@ -4,15 +4,17 @@ clearvars -except Data;
 RawFig = figure;
 %ChannelPosition16 = [1,9,5,6,14,13,2,10,15,7,12,11,3,4,16,8];
 %OpenChannels = ['3,7,11,15,19,23,27,31,2,6,10,14,18,22,26,30,4,8,12,16,20,24,28,32,1,5,9,13,17,21,25,29'];
-OpenChannels = ['5,9,13,17,21,25,29'];
-NumChannels = length(split(OpenChannels,','));
+%OpenChannels = ['5,9,13,17,21,25,29'];
+%NumChannels = length(split(OpenChannels,','));
 std_Factor=-4.5;
 prompt = {'Select Projection System (Screen = 1, Micron =2)', 'Number of Recorded Channels:','All Desired Channels:', 'N rows:','N Column:', 'N Reps:'};
 dlgtitle = 'Input';
 dims = [1 35];
-definput = {'2','1','25','1','1','50'};
+definput = {'2','4','1,4,9,13','2','2','50'};
+%definput = {'2','31',['1,2,3,4,5,6,7,8,9,10,11,12,13,15,16...' ...
+%   '17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32'],'4','8','50'};
 %definput = {'2',num2str(NumChannels),num2str(OpenChannels),'3','3','80'}
-answer = inputdlg(prompt,dlgtitle,dims,definput); NumReps = str2num(answer{6});
+answer = inputdlg(prompt,dlgtitle,dims,definput);
 FigPlotNum = str2double(answer{2}); count = str2double(answer{3}); nRows = str2num(answer{4}); nColumn = str2num(answer{5});
 definptOut = {'150'};
 if answer{1} == '2'
@@ -20,13 +22,15 @@ if answer{1} == '2'
         ,'Insert Stim Type: [Alter = 1,CFF = 2, Intensity = -]'};
     dlgtitle = 'Input';
     dims = [1 35];
-    definput1 = {'2','0','-'};
+    definput1 = {'2','0','2'};
     answer1 = inputdlg(prompt,dlgtitle,dims,definput1);
 end
 pathname = []; SignalFiles = []; Dir = [];
+
 if answer1{1} ~= '3'
-    [fname,pathname]=uigetfile('*.mat','Choose data file'); 
+    [fname,pathname]=uigetfile('*.mat','Choose data file');
 end
+
 chan = split(answer{3},',');
 if answer1{1} ~= '3'
     RastFig = figure(); PsthFig = figure();
@@ -43,14 +47,20 @@ for c = 1:FigPlotNum
         VisFlag = cell(1);
     else
         if answer1{1} == '3'
-            [raw_data{c},sampling_freq,stim_Data,stim_sampling_rate,Begin_record,channelflag,stimulus_times, stimulus_indexes,VisFlag,fname,pathname,SignalFiles,Dir] = load_data_MicronHDMI(RC,answer1,NumReps,flag,pathname,SignalFiles,Dir); % data loader for Micron HDMI stimulation
+            [raw_data{c},sampling_freq,stim_Data,stim_sampling_rate,Begin_record,channelflag,stimulus_times, stimulus_indexes,VisFlag,fname,pathname,SignalFiles,Dir] = load_data_MicronHDMI(RC,answer1,flag,pathname,SignalFiles,Dir); % data loader for Micron HDMI stimulation
             fname = fname{1};
             flag = 1;
         else
-            [raw_data{c},sampling_freq,stim_Data,stim_sampling_rate,Begin_record,channelflag,stimulus_times, stimulus_indexes,VisFlag] = load_data_Micron(RC,fname,pathname,answer1,NumReps); % data loader for Micron stimulation
+            [raw_data{c},sampling_freq,stim_Data,stim_sampling_rate,Begin_record,channelflag,stimulus_times, stimulus_indexes,VisFlag] = load_data_Micron(RC,fname,pathname,answer1); % data loader for Micron stimulation
         end
     end
 
+    if sum(ismember('Reps',fname)) == 4
+        [startIndex,endIndex] = regexp(fname,'_[0123456789._]*Reps');
+        NumReps = str2num(fname(startIndex+1:endIndex-4));
+    else
+        NumReps = str2num(answer{6});
+    end
     if ~channelflag
 
 
@@ -79,18 +89,14 @@ for c = 1:FigPlotNum
         title(['Channel ',num2str(RC)])
         %         legend('Raw Signal','Trigger','Detected Spikes','Threshold')
         ylim([-150 150])
-        %xlim((ZoomRaw))
         box off
         set(gca,'color','none')
-        %xlim([0 max(t)])
-        xlabel('Time[Sec]','FontSize',12)
-        ylabel('Amplitude[\muV]','FontSize',12)
-
         % Build raster%
         prompt = {'Insert Upper Thershold Value for spike outliers:'};
         dlgtitle = 'Input'; dims = [1 35]; Check=[]; PreStimTime = 200;
         %outlier = str2num(str2mat(inputdlg(prompt,dlgtitle,dims,definptOut)));
         outlier = str2num(str2mat(definptOut));
+        % Detect Spikes, remove Outlier and build Raster 
         [Rast,Spike,Av_spike,indx_spike,ind_rast,spike_stim,spike_times]=build_rastRef(stimulus_indexes,stimulus_times,raw_data{c},sampling_freq,Data.thresh(c),outlier,VisFlag,Check,PreStimTime);
         Data.SpikeTimes{c} = spike_times;
         Data.IndxSpike{c} =  indx_spike;
@@ -100,32 +106,33 @@ for c = 1:FigPlotNum
             RastFig = figure;
             tiledlayout('flow');
             count = 1;
-            for r = 1:NumReps:NumOrs*NumReps % Loop orientations
-                RastAlt{count} =Rast(r:r+NumReps-1,:); % Extract relevant repetitions from Raster
+            for r = 1:NumReps:NumOrs*NumReps
+                AltRepsSplit(count,:) = round(linspace(r,r+NumReps,NumReps));
+                count = count+1;
+            end
+            for r = 1:NumOrs % Split Rast to Orientations
+                RastAlt{r} = Rast(AltRepsSplit(r,:),:);
                 nexttile
-                spy(RastAlt{count})
-
-                %x=(set(gca,'XTickLabel',(linspace(-PreStimTime*10^-3,mean(diff(stimulus_times))-PreStimTime*10^-3,5))));
-                xtickc=linspace(-10*10^-3*sampling_freq,round(median(diff(stimulus_times(2:end))),2)*sampling_freq...
-                    -PreStimTime*10^-3*sampling_freq,5);
-                names= round(((xtickc/sampling_freq)-PreStimTime^-3),2)*10^3;
-
-                % figure settings
+                spy(RastAlt{r});
+                % Raster figure settings
+                xtickc = linspace(1,round(median(diff(stimulus_times(2:end))),2)*sampling_freq,11);
+                names= round(((xtickc/sampling_freq)),2)*10^3-PreStimTime;
                 set(gca, 'XTick',  xtickc, 'XTickLabel', names)
                 xlim([-440 max(xtickc)]);
                 axis square
-                xlabel('Time [ms]','FontSize',12)
-                ylabel('Stimulus Repetition','FontSize',12)
-                title(['Channel ',num2str(RC),' ',num2str(30*(count-1)),'Deg'])
+                %xlabel('Time [ms]','FontSize',12)
+                %ylabel('Stimulus Repetition','FontSize',12)
+                title(['Channel ',num2str(RC),' ',num2str(45*(r-1)),'Deg'])
                 count = count+1;
             end
+                
         else
             figure(RastFig);
             subplot(nRows,nColumn,c)
-            spy(Rast)
+            spy(Rast);
             %x=(set(gca,'XTickLabel',(linspace(-PreStimTime*10^-3,mean(diff(stimulus_times))-PreStimTime*10^-3,5))));
-%             xtickc=linspace(-PreStimTime*10^-3*sampling_freq,round(median(diff(stimulus_times(2:end))),2)*sampling_freq...
-%                 -PreStimTime*10^-3*sampling_freq,5);
+            %             xtickc=linspace(-PreStimTime*10^-3*sampling_freq,round(median(diff(stimulus_times(2:end))),2)*sampling_freq...
+            %                 -PreStimTime*10^-3*sampling_freq,5);
             xtickc = linspace(1,round(median(diff(stimulus_times(2:end))),2)*sampling_freq,11);
             names= round(((xtickc/sampling_freq)),2)*10^3-PreStimTime;
 
@@ -133,8 +140,8 @@ for c = 1:FigPlotNum
             set(gca, 'XTick',  xtickc, 'XTickLabel', names)
             xlim([0 max(xtickc)]);
             axis square
-            xlabel('Time [ms]','FontSize',12)
-            ylabel('Stimulus Repetition','FontSize',12)
+            %xlabel('Time [ms]','FontSize',12)
+            %ylabel('Stimulus Repetition','FontSize',12)
             title(['Channel ',num2str(RC)])
         end
 
@@ -150,9 +157,9 @@ for c = 1:FigPlotNum
             PsthFig = figure;
             tiledlayout('flow');
             count = 1;
-            for r = 1:NumReps:NumOrs*NumReps % Loop orientations
+            for r = 1:length(RastAlt) % Loop orientations
                 %ax = axes();
-                [PsthBinned,binsize_sec,smoothed_Psth,Label]=Build_psth3(RastAlt{count},sampling_freq,CountWindow,PSTHSettings);
+                [PsthBinned,binsize_sec,smoothed_Psth,Label]=Build_psth3(RastAlt{r},sampling_freq,CountWindow,PSTHSettings);
                 %StimTime = round(mean(diff(stimulus_times)),2);
                 t_pst=1000*linspace(-PreStimTime*10^-3,size(PsthBinned,2)*binsize_sec-PreStimTime*10^-3,length(PsthBinned));
                 nexttile
@@ -162,16 +169,16 @@ for c = 1:FigPlotNum
                 % figure settings
                 %xticklabels(linspace(0,StimTime*1000,5))
                 %xticklabels([-10])
-                xlabel('Time [ms]','FontSize',12)
-                ylabel(Label,'FontSize',12)
-                title(['Channel ',num2str(RC),' ',num2str((180/NumOrs)*(count-1)),'Deg'])
+                %xlabel('Time [ms]','FontSize',12)
+                %ylabel(Label,'FontSize',12)
+                title(['Channel ',num2str(RC),' ',num2str(180/NumOrs*(r-1)),'Deg'])
                 ylim([0 1]);
                 xlim([-PreStimTime max(t_pst)]);
                 axis square; box off;
                 set(gca,'color','none','FontSize',15)
                 %       ax.PlotBoxAspectRatio = [1,1,1]; ax.FontSize = 20;
                 %       ax.Box = 'off'; ax.Color = "none";
-                count = count+1;
+                
             end
         else
             CountWindow = [2 22];
@@ -188,8 +195,8 @@ for c = 1:FigPlotNum
             % figure settings
             %xticklabels(linspace(0,StimTime*1000,5))
             %xticklabels([-10])
-            xlabel('Time [ms]','FontSize',12)
-            ylabel(Label,'FontSize',12)
+            %xlabel('Time [ms]','FontSize',12)
+            %ylabel(Label,'FontSize',12)
             title(['Channel ',num2str(RC)])
             ylim([0 1.5]);
             xlim([-PreStimTime max(t_pst)]);
@@ -204,7 +211,9 @@ for c = 1:FigPlotNum
     x(indx_spike)=raw_data{c}(indx_spike);
     hold on
     plot(t,x,'*k')
-    % Calc Noise
+    %xlabel('Time[Sec]','FontSize',12)
+    %ylabel('Amplitude[\muV]','FontSize',12)
+    %% Calc Noise
     Sections = 25;
     for n=1:Sections
         NoiseMean(n) = length(find(spike_times<((stimulus_times(1)/Sections)*n)));
@@ -223,6 +232,9 @@ for c = 1:FigPlotNum
     %     SponSpike = Spike(1:length(SponIdxSpikes));
     %     [Data.SNR{c}] = SNRCalc(SponSpike,raw_data{c}(1:stimulus_indexes(2)),Data.thresh(c),SponIdxSpikes);
 end
+    figure(RawFig);suplabel('Time [Sec]','x'); suplabel('Amplitude[\muV]','y');
+    figure(PsthFig); suplabel('Time [ms]','x'); suplabel(Label,'y');
+    figure(RastFig); suplabel('Time [ms]','x'); suplabel('Stimulus Repetition','y');
 %figure(RawFig);
 %xlabel('Time[Sec]','FontSize',12)
 %ylabel('Amplitude[\muV]','FontSize',12)
@@ -327,21 +339,21 @@ for c=1:length(ActiveChannels)
 
 end
 %% Refractory Period Check
-      % TIH
-        TIHFig = figure;    
-        figure(TIHFig) 
-        tiledlayout('flow')
-        for i=1:Data.dim{ActiveChannels(c)}
-            Data.ISI{ActiveChannels(c)}{i} = (diff(rmmissing(Data.ClusteredspikeIdx{i}))/sampling_freq)*10^3; % Save the ISIs in ms for every cluster                    
-            nexttile
-            edges = [0:1:50];
-            histogram(Data.ISI{ActiveChannels(c)}{i}...
-                ,edges,'Normalization','probability');
-            xlabel('ISI [ms]')
-            ylabel('Probability')
-            ylim([0 0.3])
-        end
-    %CorrPlot = CorrFunc(t,Data.ClusteredspikeIdx,Data.dim{ActiveChannels(c)},sampling_freq);
+% TIH
+TIHFig = figure;
+figure(TIHFig)
+tiledlayout('flow')
+for i=1:Data.dim{ActiveChannels(c)}
+    Data.ISI{ActiveChannels(c)}{i} = (diff(rmmissing(Data.ClusteredspikeIdx{i}))/sampling_freq)*10^3; % Save the ISIs in ms for every cluster
+    nexttile
+    edges = [0:1:50];
+    histogram(Data.ISI{ActiveChannels(c)}{i}...
+        ,edges,'Normalization','probability');
+    xlabel('ISI [ms]')
+    ylabel('Probability')
+    ylim([0 0.3])
+end
+%CorrPlot = CorrFunc(t,Data.ClusteredspikeIdx,Data.dim{ActiveChannels(c)},sampling_freq);
 %% Sorted Plots
 clear  PsthBinned
 for c = 1:length(ActiveChannels)
@@ -396,13 +408,13 @@ for c = 1:length(ActiveChannels)
         prompt = {'Choose Spike Calc: (1 = Hz | 2 = Count)','Choose Bin Size [ms]:'};
         definpt = {'2','20'}; dlgtitle = 'Input'; dims = [1 35];
         PSTHSettings = inputdlg(prompt,dlgtitle,dims,definpt);
-        window = [20/str2num(PSTHSettings{2}) 320/str2num(PSTHSettings{2})]; 
+        window = [20/str2num(PSTHSettings{2}) 320/str2num(PSTHSettings{2})];
         if PSTHSettings{1} == '1' % Choose Y axis label acording to calc method
-            Label = 'Firing Rate [Spikes/sec]';        
+            Label = 'Firing Rate [Spikes/sec]';
         else
             Label = ['Spike Count [',num2str(PSTHSettings{2}),'ms]'];
         end
-            if answer1{1} == '3' % Check for Alternating Stim Condition
+        if answer1{1} == '3' % Check for Alternating Stim Condition
             PsthFig{i} = figure;
             tiledlayout('flow');
             count = 1;
@@ -451,13 +463,18 @@ end
 %% Select Relevant Clusters
 Data.Clusters = [str2num(cell2mat(inputdlg('Insert the Number of the Relevant Clusters')))]; % For multi file analysis, insert cluster numbers according of the unit's order from previous files.
 if ~isfield(Data,'Rast_sort')
-    Data.Rast_sort = {}; Data.Psth_sort = {}; Data.ind_rast_sort ={}; Data.PsthBinned = {};
+    Data.Rast_sort = {}; Data.Psth_sort = {}; Data.ind_rast_sort ={}; Data.PsthBinned = {}; Data.WaveformMat = {};
+    Data.SpikeIdx = {};
     if answer1{1} == '3' % Check for Alternating Stim Condition
+        Data.WaveformMat{end+1} = Data.SortedSpikes{Data.Clusters};
+        Data.SpikeIdx{end+1} = rmmissing(Data.ClusteredspikeIdx{Data.Clusters});
         Data.Rast_sort{end+1} = RastSortAlt{Data.Clusters};
         Data.Psth_sort{end+1} = Psth_sort{Data.Clusters};
         Data.ind_rast_sort{end+1} = ind_rast_sort{Data.Clusters};
         Data.PsthBinned{end+1} = PsthBinned{Data.Clusters};
     else
+        Data.WaveformMat{end+1} = Data.SortedSpikes{Data.Clusters};
+        Data.SpikeIdx{end+1} = rmmissing(Data.ClusteredspikeIdx{Data.Clusters});
         Data.Rast_sort{end+1} = Rast_sort{Data.Clusters};
         Data.Psth_sort{end+1} = Psth_sort(Data.Clusters,:);
         Data.ind_rast_sort{end+1} = ind_rast_sort{Data.Clusters};
@@ -465,11 +482,15 @@ if ~isfield(Data,'Rast_sort')
     end
 else
     if answer1{1} == '3' % Check for Alternating Stim Condition
+        Data.WaveformMat{end+1} = Data.SortedSpikes{Data.Clusters};
+        Data.SpikeIdx{end+1} = rmmissing(Data.ClusteredspikeIdx{Data.Clusters});
         Data.Rast_sort{end+1} = RastSortAlt{Data.Clusters};
         Data.Psth_sort{end+1} = Psth_sort{Data.Clusters};
         Data.ind_rast_sort{end+1} = ind_rast_sort{Data.Clusters};
         Data.PsthBinned{end+1} = PsthBinned{Data.Clusters};
     else
+        Data.WaveformMat{end+1} = Data.SortedSpikes{Data.Clusters};
+        Data.SpikeIdx{end+1} = rmmissing(Data.ClusteredspikeIdx{Data.Clusters});
         Data.Rast_sort{end+1} = Rast_sort{Data.Clusters};
         Data.Psth_sort{end+1} = Psth_sort(Data.Clusters,:);
         Data.ind_rast_sort{end+1} = ind_rast_sort{Data.Clusters};
@@ -607,7 +628,7 @@ if answer4{1} == '2'
     Activevector = cellfun(@(x) ~isempty(x), Data.IsActive);
     Data.LatencyFig = figure();
     plot(Data.Intensity(find(Activevector == 1))',cell2mat(Data.Latency),'b',LineWidth=2)
-     ylim([0 150]);
+    ylim([0 150]);
     ylabel('Response Latency [ms]');
     if StimType == 1
         Labelx =  ['Stimulus Intensity [nW/mm^2]']; xlim([10 650]);
@@ -628,7 +649,7 @@ if answer4{1} == '2'
     axis square; box off;
     set(gca,'color','none','FontSize',15)
 end
-    %% CFF Response
+%% CFF Response
 CFFCalcWindow = 1*sampling_freq; % Window to count the spikes in for response
 SponToResponseFactor = CFFCalcWindow/(SponWindow*sampling_freq);
 [a,b] = regexp(fname,'_[0123456789]*ms'); StimDuration = str2num(fname(a+1:b-2));
@@ -718,16 +739,16 @@ stimfreq = num2str(round(1/mean(diff(stimulus_times))));
 if ~isempty(a)
     Data.StimDur = fname(a+1:b-2);
 end
-[a,b] = regexp(pathname,'Data\\\S{10,10}'); 
+[a,b] = regexp(pathname,'Data\\\S{10,10}');
 date = pathname(a+5:b); date = datestr(datetime(strrep(date,'.','-')),'dd-mm-yyyy');
 [a,b] = regexp(fname,'Loc\d*');Data.Loc = fname(a+3:b);
 %Ch = cell2mat(inputdlg('Insert the Number of the Channel'));
 Ch = answer{3};
 %save([SavePath,'AltNatural_Loc',Data.Loc,'_','Ch',Ch,'_',date,'.mat'],"Data");
 %save([SavePath,'AltProsthetic_Loc',Data.Loc,'_','Ch',Ch,'_',date,'.mat'],"Data");
-save([SavePath,date,'_FFNatural_Loc',Data.Loc,'_','Ch',Ch,'_',Data.StimDur,'ms','.mat'],"Data");
+%save([SavePath,date,'_FFNatural_Loc',Data.Loc,'_','Ch',Ch,'_',Data.StimDur,'ms','.mat'],"Data");
 %save([SavePath,date,'_FFProsthetic_Loc',Data.Loc,'_','Ch',Ch,'_',Data.StimDur,'ms','.mat'],"Data");
-%save([SavePath,'CFFNatural_Loc',Data.Loc,'_','Ch',Ch,'_',Data.StimDur,'ms_',date,'.mat'],"Data");
+save([SavePath,'CFFNatural_Loc',Data.Loc,'_','Ch',Ch,'_',Data.StimDur,'ms_',date,'.mat'],"Data");
 %save([SavePath,'CFFProsthetic_Loc',Data.Loc,'_','Ch',Ch,'_',Data.StimDur,'ms_',date,'.mat'],"Data");
 %save([SavePath,'DSGHDMINatural_Loc',Data.Loc,'_','Ch',Ch,'_',date,'.mat'],"Data");
 %% Spectrogram

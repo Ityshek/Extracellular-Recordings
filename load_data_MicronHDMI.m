@@ -1,4 +1,4 @@
-function [raw_data, sampling_freq,stim_Data_seg,stim_sampling_rate,Begin_record,channelflag,stimulus_times, stimulus_indexes,answer,fname,pathname,SignalFiles,Dir]= load_data_MicronHDMI(c,answer,NumReps,flag,pathname,SignalFiles,Dir)
+function [raw_data, sampling_freq,stim_Data_seg,stim_sampling_rate,Begin_record,channelflag,stimulus_times, stimulus_indexes,answer,fname,pathname,SignalFiles,Dir]= load_data_MicronHDMI(c,answer,flag,pathname,SignalFiles,Dir)
 if isempty(flag)
 Dir=uigetdir('*.mat','Select a Folder to Load Raw Data From');
 SignalFiles=dir(fullfile(Dir, '*.mat'));
@@ -8,7 +8,7 @@ count = 1;
     name=num2str(c);
     for i=1:length(SignalFiles)
         fname{i} = SignalFiles(i).name;
-        [startIndex,endIndex] = regexp(fname{i},'_[0123456789._]*CPD');
+        [startIndex,endIndex] = regexp(fname{i},'_[0123456789._]*CP');
         if length(strsplit(fname{i}(startIndex+1:endIndex-3),'_')) >= 1 
             Valsstr = strsplit(fname{i}(startIndex+1:endIndex-3),'_');
             for v = 1:length(Valsstr)
